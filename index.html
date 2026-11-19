@@ -4,98 +4,100 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>F5TEC | Check-in e Checklist de OS</title>
-  <!-- LZ-string: compressão do payload do link (reduz ~60% o tamanho) -->
   <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
   <style>
     :root {
+      color-scheme: dark;
       --primary: #000000;
       --primary-dark: #000000;
-      --bg: #f4f6f9;
-      --card: #ffffff;
-      --text: #1f2937;
-      --accent: #0055ff;
-      --border: #d1d5db;
-      --danger: #dc2626;
-      --success: #16a34a;
+      --bg: #121212;
+      --card: #1e1e1e;
+      --text: #e5e7eb;
+      --accent: #3b82f6;
+      --border: #374151;
+      --danger: #ef4444;
+      --success: #22c55e;
     }
     * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     body { margin: 0; background: var(--bg); color: var(--text); padding-bottom: 40px; }
-    header { background: var(--primary); color: #fff; padding: 18px 16px; text-align: center; box-shadow: 0 2px 6px rgba(0,0,0,0.15); }
+    header { background: var(--primary); color: #fff; padding: 18px 16px; text-align: center; box-shadow: 0 2px 6px rgba(0,0,0,0.5); border-bottom: 1px solid var(--border); }
     .header-logo { display: block; width: 220px; max-width: 100%; height: 90px; object-fit: contain; margin: 0 auto 8px; }
     header h1 { margin: 0; font-size: 1.25rem; }
-    header p { margin: 4px 0 0; font-size: 0.85rem; opacity: 0.9; }
+    header p { margin: 4px 0 0; font-size: 0.85rem; opacity: 0.8; }
     .container { max-width: 600px; margin: 16px auto; padding: 0 12px; }
-    .mode-switch { display: flex; gap: 8px; margin-bottom: 16px; background: #e5e7eb; padding: 4px; border-radius: 8px; }
-    .mode-btn { flex: 1; padding: 10px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; background: transparent; color: var(--accent); }
-    .mode-btn.active { background: var(--card); color: var(--primary); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .mode-switch { display: flex; gap: 8px; margin-bottom: 16px; background: #2d2d2d; padding: 4px; border-radius: 8px; }
+    .mode-btn { flex: 1; padding: 10px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; background: transparent; color: #9ca3af; transition: 0.2s; }
+    .mode-btn.active { background: var(--card); color: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
     #dialogAcessoProtegido {
       position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center;
-      padding: 16px; background: rgba(0, 0, 0, 0.55);
+      padding: 16px; background: rgba(0, 0, 0, 0.8);
     }
     #dialogAcessoProtegido.hidden { display: none; }
     .password-dialog {
       width: min(100%, 380px); padding: 20px; background: var(--card);
-      border-radius: 10px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+      border-radius: 10px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5); border: 1px solid var(--border);
     }
     .password-dialog h2 { margin: 0 0 14px; font-size: 1.05rem; }
     .password-dialog input {
       width: 100%; padding: 10px; border: 1px solid var(--border);
-      border-radius: 6px; font-size: 1rem;
+      border-radius: 6px; font-size: 1rem; background: #27272a; color: #fff;
     }
     .password-dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
     .password-dialog-actions button {
       padding: 9px 14px; border: 0; border-radius: 6px; font-weight: 600; cursor: pointer;
     }
     #confirmarSenha { background: var(--accent); color: #fff; }
-    #cancelarSenha { background: #e5e7eb; color: var(--text); }
-    .card { background: var(--card); border-radius: 10px; padding: 16px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
-    .card h2 { margin-top: 0; font-size: 1.05rem; color: var(--primary); border-bottom: 1px solid #eee; padding-bottom: 8px; }
+    #cancelarSenha { background: #374151; color: var(--text); }
+    .card { background: var(--card); border-radius: 10px; padding: 16px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.3); border: 1px solid #2d2d2d; }
+    .card h2 { margin-top: 0; font-size: 1.05rem; color: #fff; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
     .field { margin-bottom: 14px; }
-    label, fieldset.field > legend { display: block; font-size: 0.88rem; font-weight: 600; margin-bottom: 5px; padding: 0; }
+    label, fieldset.field > legend { display: block; font-size: 0.88rem; font-weight: 600; margin-bottom: 5px; padding: 0; color: #d1d5db; }
     input[type="text"], input[type="tel"], input[type="file"], select, textarea {
       width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.95rem;
+      background: #27272a; color: #fff;
     }
+    input::placeholder, textarea::placeholder { color: #6b7280; }
     input[type="text"]:focus, input[type="tel"]:focus, input[type="file"]:focus, select:focus, textarea:focus {
-      outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0, 85, 255, 0.15);
+      outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
     }
     textarea { resize: vertical; min-height: 70px; }
     .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .pattern-helper { background: #f8fafc; border: 1px dashed var(--accent); border-radius: 8px; padding: 10px; text-align: center; margin-top: 6px; }
+    .pattern-helper { background: #27272a; border: 1px dashed var(--accent); border-radius: 8px; padding: 10px; text-align: center; margin-top: 6px; }
     .pattern-grid { display: grid; grid-template-columns: repeat(3, 42px); gap: 8px; justify-content: center; margin: 8px 0; }
     .dot-btn {
-      width: 42px; height: 42px; border-radius: 50%; border: 2px solid var(--primary);
-      background: #fff; color: var(--primary); font-weight: bold; cursor: pointer;
+      width: 42px; height: 42px; border-radius: 50%; border: 2px solid var(--accent);
+      background: #3f3f46; color: #fff; font-weight: bold; cursor: pointer;
     }
-    .dot-btn.selected { background: var(--primary); color: #fff; }
+    .dot-btn.selected { background: var(--accent); color: #fff; }
     .btn-link {
-      background: transparent; border: none; color: var(--accent);
+      background: transparent; border: none; color: #60a5fa;
       font-size: 0.75rem; cursor: pointer; padding: 4px; text-decoration: underline;
     }
     .radio-group { display: flex; gap: 6px; flex-wrap: wrap; }
     .radio-pill {
       flex: 1; text-align: center; padding: 8px 6px; border: 1px solid var(--border);
-      border-radius: 6px; font-size: 0.85rem; cursor: pointer; user-select: none; background: #fff;
-      position: relative;
+      border-radius: 6px; font-size: 0.85rem; cursor: pointer; user-select: none; background: #27272a; color: #d1d5db;
+      position: relative; transition: 0.2s;
     }
     .radio-pill input {
       position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none;
     }
     .radio-pill:has(input:checked) {
-      background: var(--primary); color: #fff; border-color: var(--primary); font-weight: 600;
+      background: #4b5563; color: #fff; border-color: #6b7280; font-weight: 600;
     }
     .radio-pill:has(input:focus-visible) {
       outline: 2px solid var(--accent); outline-offset: 2px;
     }
     .radio-pill.option-positive:has(input:checked) {
-      background: var(--success); color: #fff; border-color: var(--success);
+      background: #065f46; color: #d1fae5; border-color: var(--success);
     }
     .radio-pill.option-positive:has(input:checked)::after { content: " ✓"; }
     .radio-pill.option-negative:has(input:checked) {
-      background: var(--danger); color: #fff; border-color: var(--danger);
+      background: #7f1d1d; color: #fee2e2; border-color: var(--danger);
     }
     .radio-pill.option-negative:has(input:checked)::after { content: " ✕"; }
     .radio-pill.option-indecisive:has(input:checked) {
-      background: var(--accent); color: #fff; border-color: var(--accent);
+      background: #1e3a8a; color: #dbeafe; border-color: var(--accent);
     }
     .radio-pill.option-indecisive:has(input:checked)::after { content: " 🤔"; }
     fieldset.field {
@@ -105,24 +107,24 @@
     .terms-box {
       max-height: 450px; 
       overflow-y: auto; 
-      background: #f9fafb; 
+      background: #27272a; 
       border: 1px solid var(--border);
       padding: 16px; 
       border-radius: 6px; 
       font-size: 0.82rem; 
       line-height: 1.5; 
-      color: #374151; 
+      color: #d1d5db; 
       margin-bottom: 12px;
       text-align: justify;
     }
-    .terms-box strong { color: #111827; }
+    .terms-box strong { color: #fff; }
     .terms-box ul { margin-top: 5px; margin-bottom: 10px; padding-left: 20px; }
     .terms-box li { margin-bottom: 4px; }
-    .checkbox-row { display: flex; align-items: flex-start; gap: 10px; font-size: 0.88rem; font-weight: 600; }
-    .checkbox-row input { width: 18px; height: 18px; margin-top: 2px; flex-shrink: 0; }
+    .checkbox-row { display: flex; align-items: flex-start; gap: 10px; font-size: 0.88rem; font-weight: 600; color: #d1d5db; }
+    .checkbox-row input { width: 18px; height: 18px; margin-top: 2px; flex-shrink: 0; accent-color: var(--accent); }
     .field.has-pending > label,
     .field.has-pending > legend,
-    .checkbox-row.has-pending { color: var(--danger); }
+    .checkbox-row.has-pending { color: #fca5a5; }
     .field.has-pending > label::after,
     .field.has-pending > legend::after,
     .checkbox-row.has-pending::after {
@@ -134,41 +136,43 @@
     .field.has-pending .radio-pill:not(:has(input:checked)) { border-color: var(--danger); }
     .validation-summary {
       display: flex; align-items: center; justify-content: space-between; gap: 10px;
-      background: #fef2f2; border: 1px solid #fca5a5; color: #991b1b;
+      background: #450a0a; border: 1px solid #7f1d1d; color: #fca5a5;
       padding: 10px 12px; border-radius: 6px; margin-bottom: 14px; font-size: 0.9rem;
     }
     .validation-summary button {
-      border: none; background: transparent; color: #991b1b; text-decoration: underline;
+      border: none; background: transparent; color: #fca5a5; text-decoration: underline;
       font-weight: 600; cursor: pointer; white-space: nowrap;
     }
     .btn-submit {
       display: flex; align-items: center; justify-content: center; gap: 12px;
       width: 100%; min-height: 64px; padding: 18px 20px; background: var(--success); color: #fff; border: none;
       border-radius: 8px; font-size: 1.1rem; font-weight: bold; cursor: pointer;
+      transition: 0.2s;
     }
     .btn-submit svg { width: 28px; height: 28px; flex-shrink: 0; }
-    .btn-submit.awaiting-completion { background: #9ca3af; cursor: not-allowed; }
+    .btn-submit.awaiting-completion { background: #4b5563; color: #9ca3af; cursor: not-allowed; }
     .btn-submit.awaiting-completion svg { opacity: 0.5; }
     .btn-submit:disabled { opacity: 0.7; cursor: wait; }
     #textoBotaoEnvio { font-size: 1rem; line-height: 1.25; text-align: left; }
     .btn-Quick {
-      background: #f59e0b; color: #fff; border: none; padding: 8px 12px;
-      border-radius: 6px; font-size: 0.82rem; font-weight: 600; cursor: pointer; margin-bottom: 12px; width: 100%;
+      background: #b45309; color: #fff; border: none; padding: 8px 12px;
+      border-radius: 6px; font-size: 0.82rem; font-weight: 600; cursor: pointer; margin-bottom: 8px; width: 100%;
     }
+    .btn-Quick.ok { background: #15803d; }
     .btn-novo {
       display: block; width: 100%; margin-top: 16px; padding: 14px;
-      border: 1px solid var(--border); background: #fff; color: var(--text);
+      border: 1px solid var(--border); background: #27272a; color: var(--text);
       border-radius: 8px; font-weight: 600; font-size: 0.95rem; cursor: pointer;
     }
-    .btn-novo:hover { background: #f9fafb; }
+    .btn-novo:hover { background: #3f3f46; }
     .hidden { display: none; }
     .resumo-registros > div.hidden { display: none; }
     .field-note {
-      display: block; margin-top: 4px; font-size: 0.78rem; color: #6b7280; font-weight: normal;
+      display: block; margin-top: 4px; font-size: 0.78rem; color: #9ca3af; font-weight: normal;
     }
-    .field-note.warn { color: #b45309; }
+    .field-note.warn { color: #fcd34d; }
     .noscript-warning {
-      background: #fef3c7; border: 1px solid #fbbf24; color: #92400e;
+      background: #451a03; border: 1px solid #78350f; color: #fcd34d;
       padding: 12px; margin: 16px; border-radius: 6px; text-align: center; font-weight: 600;
     }
     .registro-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -181,20 +185,20 @@
     .registro-item {
       display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px;
       align-items: center; border: 1px solid var(--border); border-radius: 8px;
-      padding: 10px; background: #f9fafb;
+      padding: 10px; background: #27272a;
     }
-    .registro-item strong { display: block; overflow-wrap: anywhere; }
-    .registro-item small { color: #6b7280; }
-    .registro-valor { text-align: right; font-weight: 700; white-space: nowrap; }
+    .registro-item strong { display: block; overflow-wrap: anywhere; color: #fff; }
+    .registro-item small { color: #9ca3af; }
+    .registro-valor { text-align: right; font-weight: 700; white-space: nowrap; color: #fff; }
     .btn-remover {
-      border: none; background: transparent; color: var(--danger);
+      border: none; background: transparent; color: #f87171;
       cursor: pointer; padding: 4px 0 0; font-size: 0.78rem;
     }
-    .resumo-registros { display: grid; gap: 6px; border-top: 1px solid #eee; padding-top: 10px; }
-    .resumo-registros div { display: flex; justify-content: space-between; gap: 10px; }
+    .resumo-registros { display: grid; gap: 6px; border-top: 1px solid var(--border); padding-top: 10px; }
+    .resumo-registros div { display: flex; justify-content: space-between; gap: 10px; color: #d1d5db; }
     .resumo-registros .total-geral {
-      margin-top: 4px; padding-top: 8px; border-top: 2px solid var(--primary);
-      font-size: 1.05rem; font-weight: 800;
+      margin-top: 4px; padding-top: 8px; border-top: 2px solid #4b5563;
+      font-size: 1.05rem; font-weight: 800; color: #fff;
     }
     @media (max-width: 480px) {
       .mode-switch { gap: 4px; }
@@ -237,7 +241,7 @@
         <label for="senhaAbas">Digite a senha para acessar a Bancada e Peças/Serviços</label>
         <input type="password" id="senhaAbas" required autocomplete="current-password">
       </div>
-      <p id="erroSenhaAbas" class="hidden" role="alert">Senha incorreta.</p>
+      <p id="erroSenhaAbas" class="hidden" role="alert" style="color: #fca5a5; font-size: 0.85rem; margin: 5px 0 0;">Senha incorreta.</p>
       <div class="password-dialog-actions">
         <button type="button" id="cancelarSenha">Cancelar</button>
         <button type="submit" id="confirmarSenha">Acessar</button>
@@ -300,10 +304,6 @@
         </div>
       </div>
       <div class="field">
-        <label for="serie">Número de Série / IMEI (Opcional)</label>
-        <input type="text" id="serie" autocomplete="off" placeholder="Digite *#06# no telefone se ele ligar">
-      </div>
-      <div class="field">
         <label for="possuiAcessorios">Deixou acessórios junto com o aparelho? *</label>
         <select id="possuiAcessorios" required>
           <option value="" selected disabled>Selecione uma opção</option>
@@ -359,23 +359,34 @@
           <option value="SAÍDA" disabled>Inspeção de SAÍDA (Entrega)</option>
         </select>
       </div>
+      
       <div class="field" id="fotosEntrada">
-        <label>Fotos da inspeção de ENTRADA * (2 fotos)</label>
+        <label>Fotos da inspeção de ENTRADA * (6 fotos)</label>
         <div class="grid-2">
           <div><label for="fotoEntrada1">Foto 1</label><input type="file" id="fotoEntrada1" accept="image/*"></div>
           <div><label for="fotoEntrada2">Foto 2</label><input type="file" id="fotoEntrada2" accept="image/*"></div>
+          <div><label for="fotoEntrada3">Foto 3</label><input type="file" id="fotoEntrada3" accept="image/*"></div>
+          <div><label for="fotoEntrada4">Foto 4</label><input type="file" id="fotoEntrada4" accept="image/*"></div>
+          <div><label for="fotoEntrada5">Foto 5</label><input type="file" id="fotoEntrada5" accept="image/*"></div>
+          <div><label for="fotoEntrada6">Foto 6</label><input type="file" id="fotoEntrada6" accept="image/*"></div>
         </div>
       </div>
+
       <div class="field hidden" id="fotosSaida">
-        <label>Fotos do aparelho pronto para inspeção de SAÍDA * (2 fotos)</label>
+        <label>Fotos do aparelho pronto para inspeção de SAÍDA * (7 fotos)</label>
         <div class="grid-2">
           <div><label for="fotoSaida1">Foto 1</label><input type="file" id="fotoSaida1" accept="image/*"></div>
           <div><label for="fotoSaida2">Foto 2</label><input type="file" id="fotoSaida2" accept="image/*"></div>
+          <div><label for="fotoSaida3">Foto 3</label><input type="file" id="fotoSaida3" accept="image/*"></div>
+          <div><label for="fotoSaida4">Foto 4</label><input type="file" id="fotoSaida4" accept="image/*"></div>
+          <div><label for="fotoSaida5">Foto 5</label><input type="file" id="fotoSaida5" accept="image/*"></div>
+          <div><label for="fotoSaida6">Foto 6</label><input type="file" id="fotoSaida6" accept="image/*"></div>
+          <div><label for="fotoSaida7">Foto 7 (IMEI)</label><input type="file" id="fotoSaida7" accept="image/*"></div>
         </div>
       </div>
-      <small>As duas fotos da etapa selecionada são obrigatórias. Conclua as fotos e todos os itens do checklist de entrada para liberar a inspeção de saída. Ao trocar de etapa, as marcações do checklist são reiniciadas. <strong>As fotos da etapa selecionada serão compartilhadas junto com a mensagem pelo próprio celular (Android/iOS).</strong> Se o navegador não permitir o envio automático, o WhatsApp será aberto com o texto e você anexa as fotos manualmente.</small>
+      <small style="color: #9ca3af;">As fotos da etapa selecionada são obrigatórias. Conclua as fotos e todos os itens do checklist de entrada para liberar a inspeção de saída. Ao trocar de etapa, as marcações do checklist são reiniciadas. <strong style="color: #fff;">As fotos da etapa selecionada serão compartilhadas junto com a mensagem pelo próprio celular (Android/iOS).</strong> Se o navegador não permitir o envio automático, o WhatsApp será aberto com o texto e você anexa as fotos manualmente.</small>
       <div class="field hidden" id="avisoChecklistFotos">
-        Anexe as duas fotos da etapa selecionada para liberar a marcação do checklist.
+        Anexe as fotos da etapa selecionada para liberar a marcação do checklist.
       </div>
       <div class="field">
         <label for="fotosApp">Fotos Registradas no App?</label>
@@ -385,13 +396,16 @@
         </select>
       </div>
       <div id="areaChecklistTecnico" class="hidden">
+        <button type="button" class="btn-Quick ok" onclick="marcarTodosOK(); atualizarEstadoEnvio();">
+          Marcar Todos como "OK"
+        </button>
         <button type="button" class="btn-Quick" onclick="marcarTodosNaoTestados(); atualizarEstadoEnvio();">
           Aparelho Não Liga: Marcar todos como "Impossível Testar"
         </button>
         <div id="listaHardware"></div>
       </div>
       <div id="areaDiagnostico" class="hidden" style="margin-top:20px;">
-        <h2 id="tituloDiagnostico" style="border-top:1px solid #eee;padding-top:14px;">📋 Relatório de Diagnóstico</h2>
+        <h2 id="tituloDiagnostico" style="border-top:1px solid var(--border);padding-top:14px;color:#fff;">Relatório de Diagnóstico</h2>
         <div id="conteudoDiagnostico"></div>
       </div>
     </div>
@@ -425,10 +439,10 @@
       </div>
 
       <h2>Peças</h2>
-      <div class="lista-registros" id="listaPecas"><small>Nenhuma peça adicionada.</small></div>
+      <div class="lista-registros" id="listaPecas"><small style="color:#9ca3af;">Nenhuma peça adicionada.</small></div>
 
       <h2>Serviços</h2>
-      <div class="lista-registros" id="listaServicos"><small>Nenhum serviço adicionado.</small></div>
+      <div class="lista-registros" id="listaServicos"><small style="color:#9ca3af;">Nenhum serviço adicionado.</small></div>
 
       <div class="resumo-registros">
         <div><span>Total de peças</span><strong id="totalPecas">R$ 0,00</strong></div>
@@ -469,7 +483,7 @@
     <div class="card" id="blocoTermos">
       <h2>Termos de Serviço e Garantia F5TEC</h2>
       <div class="terms-box">
-        <div style="text-align: center; font-size: 0.9rem; font-weight: bold; margin-bottom: 15px;">
+        <div style="text-align: center; font-size: 0.9rem; font-weight: bold; margin-bottom: 15px; color: #fff;">
           ⚖️ TERMOS DE SERVIÇO E GARANTIA - F5TEC Assistência Técnica & Atualização Tecnológica ⚖️
         </div>
         <p>Pedimos que leia com atenção nossas políticas de atendimento:</p>
@@ -567,6 +581,9 @@
     "Botão Power", "Botão Biometria", "Botão Assistente", "Vibracall", "Aproximação"
   ];
 
+  const fotosEntradaIds = ["fotoEntrada1", "fotoEntrada2", "fotoEntrada3", "fotoEntrada4", "fotoEntrada5", "fotoEntrada6"];
+  const fotosSaidaIds = ["fotoSaida1", "fotoSaida2", "fotoSaida3", "fotoSaida4", "fotoSaida5", "fotoSaida6", "fotoSaida7"];
+
   let registrosOS = [];
   let proximoRegistroId = 1;
 
@@ -574,6 +591,20 @@
   function formatarPercentual(v) { return v.toLocaleString("pt-BR", { maximumFractionDigits: 2 }); }
   function calcularTotaisCategoria(cat) {
     return registrosOS.filter(r => r.categoria === cat).reduce((t, r) => t + (r.quantidade * r.valor), 0);
+  }
+
+  /* =============== ENCURTADOR DE URL =============== */
+  async function encurtarUrl(url) {
+    try {
+      const response = await fetch(`https://is.gd/create.php?format=json&url=${encodeURIComponent(url)}`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.shorturl) return data.shorturl;
+      }
+    } catch (e) {
+      console.warn("Erro ao encurtar URL:", e);
+    }
+    return url; // Fallback para a URL longa se falhar
   }
 
   /* =============== PAGAMENTO =============== */
@@ -678,6 +709,7 @@
       const regs = registrosOS.filter(r => r.categoria === cat);
       if (regs.length === 0) {
         const v = document.createElement("small");
+        v.style.color = "#9ca3af";
         v.textContent = cat === "Peça" ? "Nenhuma peça adicionada." : "Nenhum serviço adicionado.";
         cont.appendChild(v); return;
       }
@@ -809,7 +841,7 @@
     if (p) p.scrollIntoView({ behavior: "smooth", block: "center" });
   }
   function calcularEntradaConcluida() {
-    const f = ["fotoEntrada1", "fotoEntrada2"].every(id => document.getElementById(id).files.length > 0);
+    const f = fotosEntradaIds.every(id => document.getElementById(id).files.length > 0);
     const c = itensHardware.every((_, i) => document.querySelector(`input[name="hw_${i}"]:checked`));
     return f && c;
   }
@@ -835,26 +867,28 @@
     const total = defeitos.length + naoTestados.length + ok.length;
     if (total === 0) { area.classList.add("hidden"); return; }
     area.classList.remove("hidden");
-    document.getElementById("tituloDiagnostico").textContent = `📋 Relatório de Diagnóstico — ${estagio}`;
+    document.getElementById("tituloDiagnostico").textContent = `Relatório de Diagnóstico — ${estagio}`;
+    
+    // Cores adaptadas para o Dark Mode
     let html = "";
     if (defeitos.length > 0) {
-      html += `<div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;padding:12px;margin-bottom:10px;">
-        <strong style="color:#991b1b;display:block;margin-bottom:6px;">⚠ Itens com DEFEITO (${defeitos.length}):</strong>
-        <ul style="margin:0;padding-left:20px;color:#7f1d1d;font-size:0.9rem;">${defeitos.map(d => `<li>${d}</li>`).join("")}</ul>
+      html += `<div style="background:#450a0a;border:1px solid #7f1d1d;border-radius:8px;padding:12px;margin-bottom:10px;">
+        <strong style="color:#fca5a5;display:block;margin-bottom:6px;">[!] Itens com DEFEITO (${defeitos.length}):</strong>
+        <ul style="margin:0;padding-left:20px;color:#f87171;font-size:0.9rem;">${defeitos.map(d => `<li>${d}</li>`).join("")}</ul>
       </div>`;
     } else {
-      html += `<div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:12px;margin-bottom:10px;"><strong style="color:#166534;">✓ Nenhum defeito identificado</strong></div>`;
+      html += `<div style="background:#064e3b;border:1px solid #047857;border-radius:8px;padding:12px;margin-bottom:10px;"><strong style="color:#6ee7b7;">[OK] Nenhum defeito identificado</strong></div>`;
     }
     if (naoTestados.length > 0) {
-      html += `<div style="background:#fef3c7;border:1px solid #fbbf24;border-radius:8px;padding:12px;margin-bottom:10px;">
-        <strong style="color:#92400e;display:block;margin-bottom:6px;">🤔 Itens NÃO TESTADOS (${naoTestados.length}):</strong>
-        <ul style="margin:0;padding-left:20px;color:#78350f;font-size:0.9rem;">${naoTestados.map(d => `<li>${d}</li>`).join("")}</ul>
+      html += `<div style="background:#451a03;border:1px solid #78350f;border-radius:8px;padding:12px;margin-bottom:10px;">
+        <strong style="color:#fcd34d;display:block;margin-bottom:6px;">[?] Itens NÃO TESTADOS (${naoTestados.length}):</strong>
+        <ul style="margin:0;padding-left:20px;color:#fbbf24;font-size:0.9rem;">${naoTestados.map(d => `<li>${d}</li>`).join("")}</ul>
       </div>`;
     }
     if (ok.length > 0) {
-      html += `<div style="background:#f0f9ff;border:1px solid #7dd3fc;border-radius:8px;padding:12px;">
-        <strong style="color:#075985;display:block;margin-bottom:6px;">✓ Itens OK (${ok.length} de ${itensHardware.length}):</strong>
-        <div style="color:#0c4a6e;font-size:0.85rem;">${ok.join(", ")}</div>
+      html += `<div style="background:#172554;border:1px solid #1e3a8a;border-radius:8px;padding:12px;">
+        <strong style="color:#93c5fd;display:block;margin-bottom:6px;">[OK] Itens OK (${ok.length} de ${itensHardware.length}):</strong>
+        <div style="color:#bfdbfe;font-size:0.85rem;">${ok.join(", ")}</div>
       </div>`;
     }
     cont.innerHTML = html;
@@ -865,17 +899,21 @@
     document.getElementById("fotosEntrada").classList.toggle("hidden", estagio !== "ENTRADA");
     document.getElementById("fotosSaida").classList.toggle("hidden", estagio !== "SAÍDA");
     document.getElementById("avisoChecklistFotos").textContent = estagio === "ENTRADA"
-      ? "Anexe as duas fotos do aparelho na entrada para liberar a marcação do checklist."
-      : "Anexe as duas fotos do aparelho pronto para liberar a marcação do checklist de saída.";
-    const fotosOk = (estagio === "ENTRADA" ? ["fotoEntrada1", "fotoEntrada2"] : ["fotoSaida1", "fotoSaida2"])
-      .every(id => document.getElementById(id).files.length > 0);
+      ? "Anexe as 6 fotos do aparelho na entrada para liberar a marcação do checklist."
+      : "Anexe as 7 fotos (sendo a última o IMEI) do aparelho pronto para liberar a marcação do checklist de saída.";
+    
+    const idsAtuais = estagio === "ENTRADA" ? fotosEntradaIds : fotosSaidaIds;
+    const fotosOk = idsAtuais.every(id => document.getElementById(id).files.length > 0);
+    
     const liberado = modoAtual === "tecnico" && fotosOk;
     const foiLiberado = liberado && !checklistEstavaLiberado;
     checklistEstavaLiberado = liberado;
     document.getElementById("areaChecklistTecnico").classList.toggle("hidden", !liberado);
     document.getElementById("avisoChecklistFotos").classList.toggle("hidden", modoAtual !== "tecnico" || fotosOk);
-    ["fotoEntrada1", "fotoEntrada2"].forEach(id => { document.getElementById(id).required = modoAtual === "tecnico" && estagio === "ENTRADA"; });
-    ["fotoSaida1", "fotoSaida2"].forEach(id => { document.getElementById(id).required = modoAtual === "tecnico" && estagio === "SAÍDA"; });
+    
+    fotosEntradaIds.forEach(id => { document.getElementById(id).required = modoAtual === "tecnico" && estagio === "ENTRADA"; });
+    fotosSaidaIds.forEach(id => { document.getElementById(id).required = modoAtual === "tecnico" && estagio === "SAÍDA"; });
+    
     if (liberado && obterValorRadio("liga") === "Não" && !marcacaoAutomaticaPorEtapa[estagio]) {
       marcacaoAutomaticaPorEtapa[estagio] = true;
       marcarTodosNaoTestados();
@@ -936,12 +974,15 @@
   seletorEstagio.addEventListener("change", () => {
     validacaoIniciada = true;
     if (estagioAnterior === "ENTRADA" && seletorEstagio.value === "SAÍDA" && !inspecaoEntradaConcluida) {
-      alert("Conclua as duas fotos e todos os itens do checklist de entrada antes de avançar para a inspeção de saída.");
+      alert("Conclua as 6 fotos e todos os itens do checklist de entrada antes de avançar para a inspeção de saída.");
       seletorEstagio.value = estagioAnterior; atualizarEstadoEnvio(); irParaPrimeiraPendencia(); return;
     }
     if (estagioAnterior !== seletorEstagio.value) {
       document.querySelectorAll("#listaHardware input[type='radio']").forEach(i => { i.checked = false; });
       marcacaoAutomaticaPorEtapa[seletorEstagio.value] = false;
+      if (seletorEstagio.value === "SAÍDA") {
+         setTimeout(marcarTodosOK, 50);
+      }
     }
     estagioAnterior = seletorEstagio.value;
     atualizarEstadoEnvio();
@@ -994,6 +1035,7 @@
     document.querySelectorAll(".dot-btn").forEach(b => b.classList.remove("selected"));
     document.getElementById("senha").value = "";
   }
+  
   function marcarTodosNaoTestados() {
     itensHardware.forEach((item, idx) => {
       if (["Aro", "Tampa", "Lentes da câmera"].includes(item)) return;
@@ -1001,6 +1043,14 @@
       if (alvo) alvo.checked = true;
     });
   }
+
+  function marcarTodosOK() {
+    itensHardware.forEach((_, idx) => {
+      const alvo = document.getElementById("grp_hw_" + idx).querySelector('input[value="OK"]');
+      if (alvo) alvo.checked = true;
+    });
+  }
+
   function obterValorRadio(nome) {
     const el = document.querySelector(`input[name="${nome}"]:checked`);
     return el ? el.value : "Não informado";
@@ -1012,7 +1062,7 @@
   }
   function obterFotosEtapaAtual() {
     const est = document.getElementById("estagioChecklist").value;
-    const ids = est === "ENTRADA" ? ["fotoEntrada1", "fotoEntrada2"] : ["fotoSaida1", "fotoSaida2"];
+    const ids = est === "ENTRADA" ? fotosEntradaIds : fotosSaidaIds;
     const arr = [];
     ids.forEach(id => {
       const inp = document.getElementById(id);
@@ -1064,7 +1114,6 @@
       modelo: document.getElementById("modelo").value,
       cor: document.getElementById("cor").value,
       tipo: document.getElementById("tipo").value,
-      serie: document.getElementById("serie").value,
       possuiAcessorios: document.getElementById("possuiAcessorios").value,
       acessorios: document.getElementById("acessorios").value,
       senha: document.getElementById("senha").value,
@@ -1085,7 +1134,7 @@
     try {
       const jsonStr = descomprimirPayload(d);
       const dados = JSON.parse(jsonStr);
-      ["cliente","cpf","telefone","telefoneAdicional","marca","modelo","cor","tipo","serie","senha","defeito","observacao"].forEach(id => {
+      ["cliente","cpf","telefone","telefoneAdicional","marca","modelo","cor","tipo","senha","defeito","observacao"].forEach(id => {
         if (dados[id] != null) {
           const el = document.getElementById(id);
           if (el) el.value = dados[id];
@@ -1179,21 +1228,21 @@
   }
   function mostrarFotosParaDownload(arquivos, waUrl) {
     const modal = document.createElement("div");
-    modal.style.cssText = "position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;padding:16px;overflow:auto;";
+    modal.style.cssText = "position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,0.8);display:flex;align-items:center;justify-content:center;padding:16px;overflow:auto;";
     const box = document.createElement("div");
-    box.style.cssText = "background:#fff;padding:20px;border-radius:12px;max-width:500px;width:100%;max-height:90vh;overflow:auto;";
+    box.style.cssText = "background:#1e1e1e;border:1px solid #374151;color:#e5e7eb;padding:20px;border-radius:12px;max-width:500px;width:100%;max-height:90vh;overflow:auto;";
     const urls = [];
-    let html = `<h2 style="margin-top:0;font-size:1.1rem;">📸 Fotos prontas</h2>
-      <p style="font-size:0.88rem;color:#4b5563;">Seu navegador não permite anexar fotos automaticamente. Baixe cada foto e anexe manualmente na conversa do WhatsApp.</p>`;
+    let html = `<h2 style="margin-top:0;font-size:1.1rem;color:#fff;">Fotos prontas</h2>
+      <p style="font-size:0.88rem;color:#9ca3af;">Seu navegador não permite anexar fotos automaticamente. Baixe cada foto e anexe manualmente na conversa do WhatsApp.</p>`;
     arquivos.forEach((f, i) => {
       const u = URL.createObjectURL(f); urls.push(u);
       html += `<div style="margin-bottom:12px;">
-        <img src="${u}" style="max-width:100%;border-radius:6px;display:block;margin-bottom:6px;">
-        <a href="${u}" download="f5tec_foto_${i+1}.jpg" style="display:inline-block;padding:8px 14px;background:#0055ff;color:#fff;text-decoration:none;border-radius:6px;font-weight:600;font-size:0.9rem;">Baixar Foto ${i+1}</a>
+        <img src="${u}" style="max-width:100%;border-radius:6px;display:block;margin-bottom:6px;border:1px solid #374151;">
+        <a href="${u}" download="f5tec_foto_${i+1}.jpg" style="display:inline-block;padding:8px 14px;background:#3b82f6;color:#fff;text-decoration:none;border-radius:6px;font-weight:600;font-size:0.9rem;">Baixar Foto ${i+1}</a>
       </div>`;
     });
-    html += `<a href="${waUrl}" target="_blank" rel="noopener" style="display:block;margin-top:12px;padding:12px;background:#16a34a;color:#fff;text-align:center;text-decoration:none;border-radius:6px;font-weight:700;">Abrir WhatsApp</a>
-      <button type="button" id="fecharModalFotos" style="display:block;margin-top:8px;width:100%;padding:10px;background:#e5e7eb;border:none;border-radius:6px;cursor:pointer;font-weight:600;">Fechar</button>`;
+    html += `<a href="${waUrl}" target="_blank" rel="noopener" style="display:block;margin-top:12px;padding:12px;background:#22c55e;color:#fff;text-align:center;text-decoration:none;border-radius:6px;font-weight:700;">Abrir WhatsApp</a>
+      <button type="button" id="fecharModalFotos" style="display:block;margin-top:8px;width:100%;padding:10px;background:#374151;color:#e5e7eb;border:none;border-radius:6px;cursor:pointer;font-weight:600;">Fechar</button>`;
     box.innerHTML = html;
     modal.appendChild(box);
     document.body.appendChild(modal);
@@ -1220,7 +1269,7 @@
     } catch (e) { console.warn("Upload falhou:", e); }
     let final = textoBase;
     if (urls.length) {
-      final += `\n\n📸 *Fotos da inspeção (links):*`;
+      final += `\n\n*Fotos da inspeção (links):*`;
       urls.forEach((u, i) => { final += `\nFoto ${i+1}: ${u}`; });
     }
     abrirWhatsApp(`https://wa.me/${numero}?text=${encodeURIComponent(final)}`);
@@ -1252,32 +1301,37 @@
       msg += `*Aparelho:* ${document.getElementById("marca").value} ${document.getElementById("modelo").value}\n`;
       msg += `*Estágio:* ${estagioAtual}\n\n`;
 
-      msg += `*📋 RELATÓRIO DE DIAGNÓSTICO — ${estagioAtual}*\n`;
+      msg += `*RELATÓRIO DE DIAGNÓSTICO — ${estagioAtual}*\n`;
       if (diag.defeitos.length > 0) {
-        msg += `\n⚠ *Itens com DEFEITO (${diag.defeitos.length}):*\n`;
+        msg += `\n[!] *Itens com DEFEITO (${diag.defeitos.length}):*\n`;
         diag.defeitos.forEach(d => { msg += `• ${d}\n`; });
       } else {
-        msg += `\n✓ Nenhum defeito identificado\n`;
+        msg += `\n[OK] Nenhum defeito identificado\n`;
       }
       if (diag.naoTestados.length > 0) {
-        msg += `\n🤔 *Itens NÃO TESTADOS (${diag.naoTestados.length}):*\n`;
+        msg += `\n[?] *Itens NÃO TESTADOS (${diag.naoTestados.length}):*\n`;
         diag.naoTestados.forEach(d => { msg += `• ${d}\n`; });
       }
-      msg += `\n✓ Itens OK: ${diag.ok.length} de ${itensHardware.length}\n\n`;
+      msg += `\n[OK] Itens OK: ${diag.ok.length} de ${itensHardware.length}\n\n`;
 
       msg += `*CHECKLIST DETALHADO:*\n`;
       itensHardware.forEach((nome, idx) => {
         msg += `• ${nome}: *${obterValorRadio("hw_" + idx)}*\n`;
       });
 
-      // ✅ PERGUNTA DE APROVAÇÃO DO DIAGNÓSTICO
       msg += `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
-      msg += `*📋 APROVAÇÃO DO DIAGNÓSTICO*\n\n`;
+      msg += `*APROVAÇÃO DO DIAGNÓSTICO E ORÇAMENTO*\n\n`;
       msg += `Com base no checklist acima, precisamos da sua confirmação para prosseguir:\n\n`;
-      msg += `1️⃣ *Quero reparar TUDO* que foi identificado no diagnóstico\n`;
-      msg += `2️⃣ *Quero reparar só o NECESSÁRIO* para o aparelho funcionar\n`;
-      msg += `3️⃣ *Não autorizo reparo agora* - vou retirar o aparelho sem conserto\n\n`;
-      msg += `👉 *Responda com o número da opção desejada (1, 2 ou 3).*\n\n`;
+      msg += `1. *Quero reparar TUDO* que foi identificado no diagnóstico\n`;
+      msg += `2. *Quero reparar só o NECESSÁRIO* para o aparelho funcionar\n`;
+      msg += `3. *Não autorizo reparo agora* - vou retirar o aparelho sem conserto\n\n`;
+      
+      msg += `*Qual a forma de pagamento preferida?*\n`;
+      msg += `• PIX\n`;
+      msg += `• Dinheiro\n`;
+      msg += `• Cartão de Crédito (Aceitamos em até 18x. O repasse do acréscimo é feito conforme a taxa da maquininha)\n\n`;
+      
+      msg += `-> *Responda com o número da opção (1, 2 ou 3) e a forma de pagamento desejada.*\n\n`;
       msg += `Se você aprovar (opção 1 ou 2), já seguimos com o orçamento detalhado de peças e serviços e enviamos o valor para sua aprovação final.\n`;
       msg += `━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
 
@@ -1301,15 +1355,19 @@
       msg += `${gerarResumoPagamento()}\n`;
     } else {
       // ========== CHECK-IN (cliente → F5TEC) ==========
-      // 🔗 LINKS DE RETORNO NO TOPO (para não serem truncados)
-      const linkTecnico = gerarLinkCheckin("tecnico");
-      const linkOS = gerarLinkCheckin("os");
+      const linkTecnicoLongo = gerarLinkCheckin("tecnico");
+      const linkOSLongo = gerarLinkCheckin("os");
+      
+      const btn = document.querySelector(".btn-submit");
+      const txtOrig = document.getElementById("textoBotaoEnvio").textContent;
+      btn.disabled = true;
+      document.getElementById("textoBotaoEnvio").textContent = "Gerando links curtos...";
 
-      msg = `🔗 *LINK PARA O TÉCNICO (Checklist de Bancada):*\n${linkTecnico}\n\n`;
-      msg += `🔗 *LINK PARA ORÇAMENTO (Peças/Serviços):*\n${linkOS}\n\n`;
-      msg += `━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+      // Encurtando os links de forma assíncrona
+      const linkTecnico = await encurtarUrl(linkTecnicoLongo);
+      const linkOS = await encurtarUrl(linkOSLongo);
 
-      msg += `*F5TEC - CHECK-IN DE ORDEM DE SERVIÇO*\n`;
+      msg = `*F5TEC - CHECK-IN DE ORDEM DE SERVIÇO*\n`;
       msg += `Data Entrada: ${dataAtual}\n\n`;
       msg += `*1. DADOS DA O.S. (TELA PRINCIPAL)*\n`;
       msg += `• Cliente: ${document.getElementById("cliente").value}\n`;
@@ -1319,7 +1377,6 @@
       msg += `• Marca: ${document.getElementById("marca").value}\n`;
       msg += `• Modelo: ${document.getElementById("modelo").value}\n`;
       msg += `• Cor: ${document.getElementById("cor").value}\n`;
-      msg += `• Nº Série/IMEI: ${document.getElementById("serie").value || "N/I"}\n`;
       msg += `• Tipo: ${document.getElementById("tipo").value}\n`;
       const pA = document.getElementById("possuiAcessorios").value;
       const aD = pA === "Sim" ? `Sim: ${document.getElementById("acessorios").value}` : "Não";
@@ -1330,7 +1387,14 @@
       msg += `*2. CHECK-IN (HISTÓRICO DE ENTRADA)*\n`;
       itensTriagem.forEach(i => { msg += `• ${i.label} *${obterValorRadio(i.id)}*\n`; });
       msg += `\n*4. ACEITE LEGAL DIGITAL*\n`;
-      msg += `• Confirmado: Li e aceito os Termos de Serviço e Garantia F5TEC (Cláusula 4.1).\n`;
+      msg += `• Confirmado: Li e aceito os Termos de Serviço e Garantia F5TEC (Cláusula 4.1).\n\n`;
+      
+      msg += `━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+      msg += `*LINK PARA O TÉCNICO (Checklist):*\n${linkTecnico}\n\n`;
+      msg += `*LINK PARA ORÇAMENTO (Peças/Serviços):*\n${linkOS}\n`;
+      
+      btn.disabled = false;
+      document.getElementById("textoBotaoEnvio").textContent = txtOrig;
     }
 
     abrirWhatsApp(`https://wa.me/${numeroDestino}?text=${encodeURIComponent(msg)}`);
@@ -1358,7 +1422,12 @@
   popularParcelas();
   atualizarCampoAcessorios();
   atualizarCamposPagamento();
-  atualizarEstadoEnvio();
+  
+  setTimeout(() => {
+    marcarTodosOK();
+    atualizarEstadoEnvio();
+  }, 100);
+
   renderizarRegistrosOS();
   carregarDadosDaURL();
 </script>
