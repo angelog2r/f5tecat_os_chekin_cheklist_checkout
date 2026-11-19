@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>F5TEC | Check-in e Checklist de OS</title>
+  <!-- LZ-string: compressão do payload do link (reduz ~60% o tamanho) -->
+  <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
   <style>
     :root {
       --primary: #000000;
@@ -147,6 +149,7 @@
     .btn-submit svg { width: 28px; height: 28px; flex-shrink: 0; }
     .btn-submit.awaiting-completion { background: #9ca3af; cursor: not-allowed; }
     .btn-submit.awaiting-completion svg { opacity: 0.5; }
+    .btn-submit:disabled { opacity: 0.7; cursor: wait; }
     #textoBotaoEnvio { font-size: 1rem; line-height: 1.25; text-align: left; }
     .btn-Quick {
       background: #f59e0b; color: #fff; border: none; padding: 8px 12px;
@@ -168,30 +171,17 @@
       background: #fef3c7; border: 1px solid #fbbf24; color: #92400e;
       padding: 12px; margin: 16px; border-radius: 6px; text-align: center; font-weight: 600;
     }
-    .registro-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
-    .registro-grid .registro-descricao {
-      grid-column: 1 / -1;
-    }
+    .registro-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .registro-grid .registro-descricao { grid-column: 1 / -1; }
     .btn-adicionar {
       width: 100%; min-height: 42px; padding: 10px; border: none; border-radius: 6px;
       background: var(--accent); color: #fff; font-weight: 700; cursor: pointer;
     }
-    .lista-registros {
-      display: grid; gap: 8px; margin: 10px 0 14px;
-    }
+    .lista-registros { display: grid; gap: 8px; margin: 10px 0 14px; }
     .registro-item {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      gap: 8px;
-      align-items: center;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 10px;
-      background: #f9fafb;
+      display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px;
+      align-items: center; border: 1px solid var(--border); border-radius: 8px;
+      padding: 10px; background: #f9fafb;
     }
     .registro-item strong { display: block; overflow-wrap: anywhere; }
     .registro-item small { color: #6b7280; }
@@ -200,13 +190,8 @@
       border: none; background: transparent; color: var(--danger);
       cursor: pointer; padding: 4px 0 0; font-size: 0.78rem;
     }
-    .resumo-registros {
-      display: grid; gap: 6px;
-      border-top: 1px solid #eee; padding-top: 10px;
-    }
-    .resumo-registros div {
-      display: flex; justify-content: space-between; gap: 10px;
-    }
+    .resumo-registros { display: grid; gap: 6px; border-top: 1px solid #eee; padding-top: 10px; }
+    .resumo-registros div { display: flex; justify-content: space-between; gap: 10px; }
     .resumo-registros .total-geral {
       margin-top: 4px; padding-top: 8px; border-top: 2px solid var(--primary);
       font-size: 1.05rem; font-weight: 800;
@@ -266,7 +251,6 @@
       <button type="button" id="irParaPendencia">Ir para o campo</button>
     </div>
 
-    <!-- BLOCO 1: TELA ORDEM DE SERVIÇO -->
     <div class="card" id="blocoDadosOS">
       <h2>Dados da Ordem de Serviço</h2>
       <div class="field">
@@ -277,22 +261,18 @@
         <label for="cpf">CPF *</label>
         <input type="text" id="cpf" inputmode="numeric" autocomplete="off" maxlength="14"
                pattern="(?:\d{11}|\d{3}\.\d{3}\.\d{3}-\d{2})"
-               title="Informe 11 dígitos, com ou sem pontuação"
-               placeholder="000.000.000-00">
+               title="Informe 11 dígitos, com ou sem pontuação" placeholder="000.000.000-00">
       </div>
       <div class="field">
         <label for="telefone">Telefone / WhatsApp *</label>
         <input type="tel" id="telefone" required inputmode="tel" autocomplete="tel"
-               pattern="(?:\D*\d){10,13}\D*"
-               title="Informe DDD + número (ex.: (11) 99999-9999)"
+               pattern="(?:\D*\d){10,13}\D*" title="Informe DDD + número (ex.: (11) 99999-9999)"
                placeholder="Ex.: (11) 99999-9999">
       </div>
       <div class="field">
         <label for="telefoneAdicional">Telefone / WhatsApp adicional (opcional)</label>
         <input type="tel" id="telefoneAdicional" inputmode="tel" autocomplete="tel-national"
-               pattern="(?:\D*\d){10,13}\D*"
-               title="Informe DDD + número (ex.: (11) 99999-9999)"
-               placeholder="Ex.: (11) 99999-9999">
+               pattern="(?:\D*\d){10,13}\D*" placeholder="Ex.: (11) 99999-9999">
       </div>
       <div class="grid-2">
         <div class="field">
@@ -365,13 +345,11 @@
       </div>
     </div>
 
-    <!-- BLOCO 2: TRIAGEM DO CHECK-IN -->
     <div class="card" id="blocoTriagem">
       <h2>Triagem de Entrada (Check-in)</h2>
       <div id="perguntasTriagem"></div>
     </div>
 
-    <!-- BLOCO 3: CHECKLIST TÉCNICO DE BANCADA (25 ITENS) -->
     <div class="card hidden" id="blocoTecnico">
       <h2>Checklist Técnico de Bancada (Entrada / Saída)</h2>
       <div class="field">
@@ -384,27 +362,15 @@
       <div class="field" id="fotosEntrada">
         <label>Fotos da inspeção de ENTRADA * (2 fotos)</label>
         <div class="grid-2">
-          <div>
-            <label for="fotoEntrada1">Foto 1</label>
-            <input type="file" id="fotoEntrada1" accept="image/*">
-          </div>
-          <div>
-            <label for="fotoEntrada2">Foto 2</label>
-            <input type="file" id="fotoEntrada2" accept="image/*">
-          </div>
+          <div><label for="fotoEntrada1">Foto 1</label><input type="file" id="fotoEntrada1" accept="image/*"></div>
+          <div><label for="fotoEntrada2">Foto 2</label><input type="file" id="fotoEntrada2" accept="image/*"></div>
         </div>
       </div>
       <div class="field hidden" id="fotosSaida">
         <label>Fotos do aparelho pronto para inspeção de SAÍDA * (2 fotos)</label>
         <div class="grid-2">
-          <div>
-            <label for="fotoSaida1">Foto 1</label>
-            <input type="file" id="fotoSaida1" accept="image/*">
-          </div>
-          <div>
-            <label for="fotoSaida2">Foto 2</label>
-            <input type="file" id="fotoSaida2" accept="image/*">
-          </div>
+          <div><label for="fotoSaida1">Foto 1</label><input type="file" id="fotoSaida1" accept="image/*"></div>
+          <div><label for="fotoSaida2">Foto 2</label><input type="file" id="fotoSaida2" accept="image/*"></div>
         </div>
       </div>
       <small>As duas fotos da etapa selecionada são obrigatórias. Conclua as fotos e todos os itens do checklist de entrada para liberar a inspeção de saída. Ao trocar de etapa, as marcações do checklist são reiniciadas. <strong>As fotos da etapa selecionada serão compartilhadas junto com a mensagem pelo próprio celular (Android/iOS).</strong> Se o navegador não permitir o envio automático, o WhatsApp será aberto com o texto e você anexa as fotos manualmente.</small>
@@ -424,9 +390,12 @@
         </button>
         <div id="listaHardware"></div>
       </div>
+      <div id="areaDiagnostico" class="hidden" style="margin-top:20px;">
+        <h2 id="tituloDiagnostico" style="border-top:1px solid #eee;padding-top:14px;">📋 Relatório de Diagnóstico</h2>
+        <div id="conteudoDiagnostico"></div>
+      </div>
     </div>
 
-    <!-- BLOCO 4: PEÇAS E SERVIÇOS DA ORDEM DE SERVIÇO -->
     <div class="card hidden" id="blocoOS">
       <h2>Peças e Serviços da Ordem de Serviço</h2>
       <div class="registro-grid">
@@ -456,14 +425,10 @@
       </div>
 
       <h2>Peças</h2>
-      <div class="lista-registros" id="listaPecas">
-        <small>Nenhuma peça adicionada.</small>
-      </div>
+      <div class="lista-registros" id="listaPecas"><small>Nenhuma peça adicionada.</small></div>
 
       <h2>Serviços</h2>
-      <div class="lista-registros" id="listaServicos">
-        <small>Nenhum serviço adicionado.</small>
-      </div>
+      <div class="lista-registros" id="listaServicos"><small>Nenhum serviço adicionado.</small></div>
 
       <div class="resumo-registros">
         <div><span>Total de peças</span><strong id="totalPecas">R$ 0,00</strong></div>
@@ -471,7 +436,6 @@
         <div class="total-geral"><span>Total geral</span><strong id="totalGeral">R$ 0,00</strong></div>
       </div>
 
-      <!-- FORMA DE PAGAMENTO -->
       <h2 style="margin-top:18px;">Forma de Pagamento</h2>
       <div class="registro-grid">
         <div class="field">
@@ -502,16 +466,13 @@
       </div>
     </div>
 
-    <!-- BLOCO 5: TERMOS DE SERVIÇO E GARANTIA F5TEC -->
     <div class="card" id="blocoTermos">
       <h2>Termos de Serviço e Garantia F5TEC</h2>
       <div class="terms-box">
         <div style="text-align: center; font-size: 0.9rem; font-weight: bold; margin-bottom: 15px;">
           ⚖️ TERMOS DE SERVIÇO E GARANTIA - F5TEC Assistência Técnica & Atualização Tecnológica ⚖️
         </div>
-        
         <p>Pedimos que leia com atenção nossas políticas de atendimento:</p>
-
         <strong>📝 2 CONDIÇÕES GERAIS DE SERVIÇO</strong><br><br>
         <strong>🔎 2.1 Pré-Orçamento e Avaliação Técnica:</strong> Qualquer valor informado antes da análise física do aparelho é considerado pré-orçamento estimado, podendo variar conforme o diagnóstico técnico real. O orçamento oficial somente será emitido após a abertura e análise completa do dispositivo pelo técnico responsável. Caso o cliente não aprove o orçamento após essa avaliação, será cobrada a taxa de diagnóstico, referente ao tempo e mão de obra utilizados no processo.<br><br>
         <strong>⏳ 2.2 Prazos, Retirada e Abandono:</strong> O aparelho deve ser retirado no prazo sugerido de 5 (cinco) dias úteis após a conclusão. O cliente se compromete a retirar o aparelho em até 30 (trinta) dias; passado esse prazo, poderá ser cobrado um acréscimo de 10% ao mês pelo armazenamento. Atenção: a não retirada do aparelho no prazo de 90 dias implicará na venda do mesmo para pagamento de custos, configurando abandono de acordo com o Código Civil (Art. 1.263).<br><br>
@@ -522,7 +483,6 @@
         <strong>📱 2.7 Acessórios e Chips:</strong> A assistência não se responsabiliza por películas, capas, chips (SIM), cartões de memória ou quaisquer partes externas e acessórios deixados junto ao aparelho.<br><br>
         <strong>🛵 2.8 Logística (Tele-busca e Entrega):</strong> Oferecemos serviço de coleta e entrega. O serviço será isento caso o orçamento seja aprovado. Caso reprovado ou em caso de desistência, será cobrada uma taxa de deslocamento previamente informada.<br><br>
         <strong>🔄 2.9 Aparelho Reserva (Comodato):</strong> Caso a F5TEC disponibilize um aparelho reserva em regime de comodato, este é de uso temporário e deve ser devolvido nas mesmas condições. Quaisquer danos, quedas, mau uso ou furto serão de responsabilidade total do cliente, podendo o valor de reposição ser retido sobre o aparelho original em manutenção.<br><br>
-
         <strong>🛡️ 3 TERMO DE GARANTIA</strong><br><br>
         <strong>🗓️ 3.1 Cobertura e Prazos:</strong> A garantia é de 90 (noventa) dias, de acordo com o Art. 26, inciso II do CDC (para serviços e produtos duráveis). A garantia cobre exclusivamente a peça substituída e o serviço descrito nesta O.S. (Nota Fiscal), não abrangendo outras partes ou defeitos do aparelho.<br><br>
         <strong>🚫 3.2 Perda Automática de Garantia:</strong> A garantia será imediatamente cancelada caso o aparelho apresente:
@@ -539,7 +499,7 @@
         <ul>
           <li>Após ser aberto para reparo, o aparelho perde qualquer certificação original de proteção ou resistência contra água e poeira.</li>
           <li>Funcionamento de aplicativos, sistema operacional e limpeza do aparelho não fazem parte da garantia.</li>
-          <li>A não apresentação deste termo ou da ordem de serviço inválida a garantia.</li>
+          <li>A não apresentação deste termo ou da ordem de serviço invalida a garantia.</li>
           <li>Após o acionamento da garantia, a loja terá o prazo legal de até 7 (sete) dias úteis para análise e resolução do caso.</li>
         </ul>
         <br>
@@ -547,7 +507,6 @@
         <strong>👉 4.1</strong> Confirmo que li este termo de orçamento, serviço e garantia e fui orientado sobre o seu conteúdo.<br><br>
         <strong>👍</strong> Declaro que recebi o aparelho nas condições descritas, testei o equipamento no ato da entrega e o mesmo saiu em perfeito estado estético e de funcionamento conforme checklist.<br><br>
         <strong>🆗</strong> O envio/recebimento digital deste documento e o pagamento do serviço ou a retirada do equipamento constituem <strong>ACEITE DIGITAL</strong> integral, irrevogável e automático de todas as condições e exclusões aqui descritas, substituindo a assinatura física e possuindo total validade legal.
-
       </div>
       <label class="checkbox-row" for="aceiteTermos">
         <input type="checkbox" id="aceiteTermos" required>
@@ -569,8 +528,10 @@
 </div>
 
 <script>
-  const NUMERO_CLIENTE = "555197371944"; // Número de destino do modo Cliente (F5TEC)
+  const NUMERO_CLIENTE = "555197371944";
   const SENHA_ABAS_PROTEGIDAS = "0101";
+  const URL_BASE_OFICIAL = "https://angelog2r.github.io/f5tecat_os_chekin_cheklist_checkout/";
+
   let modoAtual = "cliente";
   let abasProtegidasDesbloqueadas = false;
   let modoProtegidoPendente = null;
@@ -580,8 +541,6 @@
   let validacaoIniciada = false;
   const marcacaoAutomaticaPorEtapa = { ENTRADA: false, "SAÍDA": false };
 
-  // TAXAS TOTAIS DA MAQUININHA (Baseado na simulação do usuário)
-  // O valor já representa a porcentagem TOTAL a ser acrescida no valor base.
   const TAXAS_PARCELAMENTO = {
     1: 3.08, 2: 10.74, 3: 12.09, 4: 12.45, 5: 14.76,
     6: 15.01, 7: 16.96, 8: 17.20, 9: 19.55, 10: 20.46,
@@ -611,44 +570,28 @@
   let registrosOS = [];
   let proximoRegistroId = 1;
 
-  function formatarMoeda(valor) {
-    return valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  function formatarMoeda(v) { return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }); }
+  function formatarPercentual(v) { return v.toLocaleString("pt-BR", { maximumFractionDigits: 2 }); }
+  function calcularTotaisCategoria(cat) {
+    return registrosOS.filter(r => r.categoria === cat).reduce((t, r) => t + (r.quantidade * r.valor), 0);
   }
 
-  function formatarPercentual(valor) {
-    return valor.toLocaleString("pt-BR", { maximumFractionDigits: 2 });
-  }
-
-  function calcularTotaisCategoria(categoria) {
-    return registrosOS
-      .filter(registro => registro.categoria === categoria)
-      .reduce((total, registro) => total + (registro.quantidade * registro.valor), 0);
-  }
-
-  /* ============================================================
-     FORMA DE PAGAMENTO (DINHEIRO / PIX / CARTÃO ATÉ 18x)
-     ============================================================ */
-
+  /* =============== PAGAMENTO =============== */
   function popularParcelas() {
-    const select = document.getElementById("parcelasCartao");
-    select.replaceChildren();
+    const s = document.getElementById("parcelasCartao");
+    s.replaceChildren();
     for (let i = 1; i <= 18; i++) {
-      const opt = document.createElement("option");
-      opt.value = String(i);
-      opt.textContent = i === 1 ? "1x (à vista)" : `${i}x`;
-      select.appendChild(opt);
+      const o = document.createElement("option");
+      o.value = String(i);
+      o.textContent = i === 1 ? "1x (à vista)" : `${i}x`;
+      s.appendChild(o);
     }
   }
-
   function atualizarTaxaCartao() {
-    const parcelas = document.getElementById("parcelasCartao").value;
-    if (TAXAS_PARCELAMENTO[parcelas]) {
-      document.getElementById("taxaCartao").value = TAXAS_PARCELAMENTO[parcelas].toFixed(2).replace(".", ",");
-    } else {
-      document.getElementById("taxaCartao").value = "";
-    }
+    const p = document.getElementById("parcelasCartao").value;
+    document.getElementById("taxaCartao").value = TAXAS_PARCELAMENTO[p]
+      ? TAXAS_PARCELAMENTO[p].toFixed(2).replace(".", ",") : "";
   }
-
   function obterDadosPagamento() {
     const forma = document.getElementById("formaPagamento").value;
     const total = calcularTotaisCategoria("Peça") + calcularTotaisCategoria("Serviço");
@@ -656,56 +599,30 @@
     const taxaTexto = document.getElementById("taxaCartao").value.trim().replace(",", ".");
     const taxa = Number(taxaTexto);
     const taxaValida = taxaTexto !== "" && Number.isFinite(taxa) && taxa >= 0;
-
-    let totalFinal = total;
-    let acrescimo = 0;
-
+    let totalFinal = total, acrescimo = 0;
     if (forma === "Cartão de Crédito") {
-      const taxaAplicada = taxaValida ? taxa : 0;
-      totalFinal = taxaAplicada > 0 ? total * (1 + taxaAplicada / 100) : total;
+      const t = taxaValida ? taxa : 0;
+      totalFinal = t > 0 ? total * (1 + t / 100) : total;
       acrescimo = totalFinal - total;
     }
-
-    return {
-      forma,
-      total,
-      parcelas,
-      taxa: taxaValida ? taxa : 0,
-      taxaValida,
-      acrescimo,
-      totalFinal,
-      valorParcela: totalFinal / parcelas
-    };
+    return { forma, total, parcelas, taxa: taxaValida ? taxa : 0, taxaValida, acrescimo, totalFinal, valorParcela: totalFinal / parcelas };
   }
-
   function renderizarPagamento() {
-    const dados = obterDadosPagamento();
-
-    document.getElementById("resumoFormaPagamento").textContent = dados.forma || "Não informada";
-
-    const linhaParcelas = document.getElementById("linhaParcelas");
-    const linhaAcrescimo = document.getElementById("linhaAcrescimo");
-    const ehCartao = dados.forma === "Cartão de Crédito";
-
-    linhaParcelas.classList.toggle("hidden", !ehCartao);
-    linhaAcrescimo.classList.toggle("hidden", !ehCartao);
-
+    const d = obterDadosPagamento();
+    document.getElementById("resumoFormaPagamento").textContent = d.forma || "Não informada";
+    const ehCartao = d.forma === "Cartão de Crédito";
+    document.getElementById("linhaParcelas").classList.toggle("hidden", !ehCartao);
+    document.getElementById("linhaAcrescimo").classList.toggle("hidden", !ehCartao);
     if (ehCartao) {
-      document.getElementById("resumoParcelas").textContent =
-        `${dados.parcelas}x de ${formatarMoeda(dados.valorParcela)}`;
-      document.getElementById("resumoAcrescimo").textContent = dados.taxaValida
-        ? `${formatarPercentual(dados.taxa)}% (${formatarMoeda(dados.acrescimo)})`
-        : "Informe a taxa";
+      document.getElementById("resumoParcelas").textContent = `${d.parcelas}x de ${formatarMoeda(d.valorParcela)}`;
+      document.getElementById("resumoAcrescimo").textContent = d.taxaValida
+        ? `${formatarPercentual(d.taxa)}% (${formatarMoeda(d.acrescimo)})` : "Informe a taxa";
     }
-
-    document.getElementById("totalComPagamento").textContent = formatarMoeda(dados.totalFinal);
+    document.getElementById("totalComPagamento").textContent = formatarMoeda(d.totalFinal);
   }
-
   function atualizarCamposPagamento() {
     const ativo = modoAtual === "os";
-    const forma = document.getElementById("formaPagamento").value;
-    const ehCartao = ativo && forma === "Cartão de Crédito";
-
+    const ehCartao = ativo && document.getElementById("formaPagamento").value === "Cartão de Crédito";
     document.getElementById("formaPagamento").disabled = !ativo;
     document.getElementById("campoParcelas").classList.toggle("hidden", !ehCartao);
     document.getElementById("campoTaxaCartao").classList.toggle("hidden", !ehCartao);
@@ -713,375 +630,276 @@
     document.getElementById("taxaCartao").disabled = !ehCartao;
     document.getElementById("parcelasCartao").required = ehCartao;
     document.getElementById("taxaCartao").required = ehCartao;
-
-    if (ehCartao) {
-      atualizarTaxaCartao();
-    }
-
+    if (ehCartao) atualizarTaxaCartao();
     renderizarPagamento();
   }
-
   function gerarResumoPagamento() {
-    const dados = obterDadosPagamento();
-    let resumo = "*6. FORMA DE PAGAMENTO*\n";
-
-    if (!dados.forma) {
-      return resumo + "• Não informada";
+    const d = obterDadosPagamento();
+    let r = "*6. FORMA DE PAGAMENTO*\n";
+    if (!d.forma) return r + "• Não informada";
+    r += `• Forma: ${d.forma}\n`;
+    if (d.forma === "Cartão de Crédito") {
+      r += `• Parcelas: ${d.parcelas}x de ${formatarMoeda(d.valorParcela)}\n`;
+      r += `• Taxa da maquininha: ${formatarPercentual(d.taxa)}% (total)\n`;
+      r += `• Acréscimo repassado: ${formatarMoeda(d.acrescimo)}\n`;
     }
-
-    resumo += `• Forma: ${dados.forma}\n`;
-    if (dados.forma === "Cartão de Crédito") {
-      resumo += `• Parcelas: ${dados.parcelas}x de ${formatarMoeda(dados.valorParcela)}\n`;
-      resumo += `• Taxa da maquininha: ${formatarPercentual(dados.taxa)}% (total)\n`;
-      resumo += `• Acréscimo repassado: ${formatarMoeda(dados.acrescimo)}\n`;
-    }
-    resumo += `• *Total a pagar: ${formatarMoeda(dados.totalFinal)}*`;
-    return resumo;
+    r += `• *Total a pagar: ${formatarMoeda(d.totalFinal)}*`;
+    return r;
   }
 
-  /* ============================================================
-     PEÇAS E SERVIÇOS
-     ============================================================ */
-
-  function criarItemRegistro(registro) {
+  /* =============== PEÇAS/SERVIÇOS =============== */
+  function criarItemRegistro(r) {
     const item = document.createElement("div");
     item.className = "registro-item";
-
-    const detalhes = document.createElement("div");
-    const descricao = document.createElement("strong");
-    descricao.textContent = registro.descricao;
-    const quantidade = document.createElement("small");
-    quantidade.textContent = `Quantidade: ${registro.quantidade} × ${formatarMoeda(registro.valor)}`;
-    detalhes.appendChild(descricao);
-    detalhes.appendChild(document.createElement("br"));
-    detalhes.appendChild(quantidade);
-
-    const direita = document.createElement("div");
-    direita.style.textAlign = "right";
-    const total = document.createElement("div");
-    total.className = "registro-valor";
-    total.textContent = formatarMoeda(registro.quantidade * registro.valor);
-    const remover = document.createElement("button");
-    remover.type = "button";
-    remover.className = "btn-remover";
-    remover.textContent = "Remover";
-    remover.onclick = () => removerRegistroOS(registro.id);
-    direita.appendChild(total);
-    direita.appendChild(remover);
-
-    item.appendChild(detalhes);
-    item.appendChild(direita);
+    const det = document.createElement("div");
+    const desc = document.createElement("strong");
+    desc.textContent = r.descricao;
+    const qtd = document.createElement("small");
+    qtd.textContent = `Quantidade: ${r.quantidade} × ${formatarMoeda(r.valor)}`;
+    det.appendChild(desc); det.appendChild(document.createElement("br")); det.appendChild(qtd);
+    const dir = document.createElement("div");
+    dir.style.textAlign = "right";
+    const tot = document.createElement("div");
+    tot.className = "registro-valor";
+    tot.textContent = formatarMoeda(r.quantidade * r.valor);
+    const rem = document.createElement("button");
+    rem.type = "button";
+    rem.className = "btn-remover";
+    rem.textContent = "Remover";
+    rem.onclick = () => removerRegistroOS(r.id);
+    dir.appendChild(tot); dir.appendChild(rem);
+    item.appendChild(det); item.appendChild(dir);
     return item;
   }
-
   function renderizarRegistrosOS() {
-    ["Peça", "Serviço"].forEach(categoria => {
-      const container = document.getElementById(categoria === "Peça" ? "listaPecas" : "listaServicos");
-      container.replaceChildren();
-      const registrosCategoria = registrosOS.filter(registro => registro.categoria === categoria);
-
-      if (registrosCategoria.length === 0) {
-        const vazio = document.createElement("small");
-        vazio.textContent = categoria === "Peça"
-          ? "Nenhuma peça adicionada."
-          : "Nenhum serviço adicionado.";
-        container.appendChild(vazio);
-        return;
+    ["Peça", "Serviço"].forEach(cat => {
+      const cont = document.getElementById(cat === "Peça" ? "listaPecas" : "listaServicos");
+      cont.replaceChildren();
+      const regs = registrosOS.filter(r => r.categoria === cat);
+      if (regs.length === 0) {
+        const v = document.createElement("small");
+        v.textContent = cat === "Peça" ? "Nenhuma peça adicionada." : "Nenhum serviço adicionado.";
+        cont.appendChild(v); return;
       }
-
-      registrosCategoria.forEach(registro => container.appendChild(criarItemRegistro(registro)));
+      regs.forEach(r => cont.appendChild(criarItemRegistro(r)));
     });
-
-    const totalPecas = calcularTotaisCategoria("Peça");
-    const totalServicos = calcularTotaisCategoria("Serviço");
-    document.getElementById("totalPecas").textContent = formatarMoeda(totalPecas);
-    document.getElementById("totalServicos").textContent = formatarMoeda(totalServicos);
-    document.getElementById("totalGeral").textContent = formatarMoeda(totalPecas + totalServicos);
-
+    const tp = calcularTotaisCategoria("Peça");
+    const ts = calcularTotaisCategoria("Serviço");
+    document.getElementById("totalPecas").textContent = formatarMoeda(tp);
+    document.getElementById("totalServicos").textContent = formatarMoeda(ts);
+    document.getElementById("totalGeral").textContent = formatarMoeda(tp + ts);
     renderizarPagamento();
   }
-
   function adicionarRegistroOS() {
-    const categoria = document.getElementById("categoriaRegistro").value;
-    const descricao = document.getElementById("descricaoRegistro").value.trim();
-    const quantidade = Number(document.getElementById("quantidadeRegistro").value.trim());
-    const valorRaw = document.getElementById("valorRegistro").value.trim().replace(",", ".");
-    const valor = Number(valorRaw);
-
-    if (!descricao) {
-      document.getElementById("descricaoRegistro").focus();
-      alert("Informe a descrição da peça ou do serviço.");
-      return;
-    }
-    if (!Number.isInteger(quantidade) || quantidade < 1) {
-      document.getElementById("quantidadeRegistro").focus();
-      alert("Informe uma quantidade inteira maior que zero.");
-      return;
-    }
-    if (!Number.isFinite(valor) || valor < 0) {
-      document.getElementById("valorRegistro").focus();
-      alert("Informe um valor válido (ex.: 10,50 ou 10.50).");
-      return;
-    }
-
-    registrosOS.push({
-      id: proximoRegistroId++,
-      categoria,
-      descricao,
-      quantidade,
-      valor
-    });
-
+    const cat = document.getElementById("categoriaRegistro").value;
+    const desc = document.getElementById("descricaoRegistro").value.trim();
+    const qtd = Number(document.getElementById("quantidadeRegistro").value.trim());
+    const vRaw = document.getElementById("valorRegistro").value.trim().replace(",", ".");
+    const val = Number(vRaw);
+    if (!desc) { document.getElementById("descricaoRegistro").focus(); alert("Informe a descrição."); return; }
+    if (!Number.isInteger(qtd) || qtd < 1) { document.getElementById("quantidadeRegistro").focus(); alert("Quantidade inválida."); return; }
+    if (!Number.isFinite(val) || val < 0) { document.getElementById("valorRegistro").focus(); alert("Valor inválido."); return; }
+    registrosOS.push({ id: proximoRegistroId++, categoria: cat, descricao: desc, quantidade: qtd, valor: val });
     document.getElementById("descricaoRegistro").value = "";
     document.getElementById("quantidadeRegistro").value = "1";
     document.getElementById("valorRegistro").value = "";
     document.getElementById("descricaoRegistro").focus();
     renderizarRegistrosOS();
   }
-
-  function removerRegistroOS(id) {
-    registrosOS = registrosOS.filter(registro => registro.id !== id);
-    renderizarRegistrosOS();
-  }
-
+  function removerRegistroOS(id) { registrosOS = registrosOS.filter(r => r.id !== id); renderizarRegistrosOS(); }
   function gerarResumoRegistrosOS() {
-    if (registrosOS.length === 0) {
-      return "*5. PEÇAS E SERVIÇOS*\n• Nenhum registro cadastrado.";
-    }
-
-    let resumo = "*5. PEÇAS E SERVIÇOS*\n";
-    ["Peça", "Serviço"].forEach(categoria => {
-      const registros = registrosOS.filter(registro => registro.categoria === categoria);
-      resumo += `\n*${categoria === "Peça" ? "Peças" : "Serviços"}*\n`;
-      if (registros.length === 0) {
-        resumo += "• Nenhum registro\n";
-      } else {
-        registros.forEach(registro => {
-          resumo += `• ${registro.descricao}: ${registro.quantidade} × ${formatarMoeda(registro.valor)} = ${formatarMoeda(registro.quantidade * registro.valor)}\n`;
-        });
-      }
+    if (registrosOS.length === 0) return "*5. PEÇAS E SERVIÇOS*\n• Nenhum registro cadastrado.";
+    let r = "*5. PEÇAS E SERVIÇOS*\n";
+    ["Peça", "Serviço"].forEach(cat => {
+      const regs = registrosOS.filter(x => x.categoria === cat);
+      r += `\n*${cat === "Peça" ? "Peças" : "Serviços"}*\n`;
+      if (regs.length === 0) r += "• Nenhum registro\n";
+      else regs.forEach(x => { r += `• ${x.descricao}: ${x.quantidade} × ${formatarMoeda(x.valor)} = ${formatarMoeda(x.quantidade * x.valor)}\n`; });
     });
-
-    const totalPecas = calcularTotaisCategoria("Peça");
-    const totalServicos = calcularTotaisCategoria("Serviço");
-    resumo += `\n• Total de peças: ${formatarMoeda(totalPecas)}\n`;
-    resumo += `• Total de serviços: ${formatarMoeda(totalServicos)}\n`;
-    resumo += `• *Total geral: ${formatarMoeda(totalPecas + totalServicos)}*`;
-    return resumo;
+    const tp = calcularTotaisCategoria("Peça");
+    const ts = calcularTotaisCategoria("Serviço");
+    r += `\n• Total de peças: ${formatarMoeda(tp)}\n`;
+    r += `• Total de serviços: ${formatarMoeda(ts)}\n`;
+    r += `• *Total geral: ${formatarMoeda(tp + ts)}*`;
+    return r;
   }
 
-  /* ============================================================
-     TRIAGEM / CHECKLIST
-     ============================================================ */
-
-  function criarGrupoOpcoes(containerId, lista, opcoesPadrao) {
-    const container = document.getElementById(containerId);
+  /* =============== TRIAGEM/CHECKLIST =============== */
+  function criarGrupoOpcoes(contId, lista, opcoesPadrao) {
+    const cont = document.getElementById(contId);
     lista.forEach((item, idx) => {
       const nome = typeof item === "string" ? item : item.label;
       const chave = typeof item === "string" ? "hw_" + idx : item.id;
-      const opcoes = typeof item === "string" ? opcoesPadrao : item.opcoes;
-
-      const fieldset = document.createElement("fieldset");
-      fieldset.className = "field";
-
-      const legend = document.createElement("legend");
-      legend.textContent = nome;
-      fieldset.appendChild(legend);
-
+      const ops = typeof item === "string" ? opcoesPadrao : item.opcoes;
+      const fs = document.createElement("fieldset");
+      fs.className = "field";
+      const lg = document.createElement("legend");
+      lg.textContent = nome;
+      fs.appendChild(lg);
       const grp = document.createElement("div");
       grp.className = "radio-group";
       grp.id = "grp_" + chave;
-      fieldset.appendChild(grp);
-      container.appendChild(fieldset);
-
-      opcoes.forEach(op => {
+      fs.appendChild(grp);
+      cont.appendChild(fs);
+      ops.forEach(op => {
         const pill = document.createElement("label");
         pill.className = "radio-pill";
-        if (op === "Sim" || op.startsWith("Sim ") || op === "OK") {
-          pill.classList.add("option-positive");
-        } else if (op === "Não" || op === "Defeito") {
-          pill.classList.add("option-negative");
-        } else if (["Não sei", "Não precisa", "Não Testado", "Reiniciando"].includes(op)) {
-          pill.classList.add("option-indecisive");
-        }
-        const input = document.createElement("input");
-        input.type = "radio";
-        input.name = chave;
-        input.value = op;
-        pill.appendChild(input);
+        if (op === "Sim" || op.startsWith("Sim ") || op === "OK") pill.classList.add("option-positive");
+        else if (op === "Não" || op === "Defeito") pill.classList.add("option-negative");
+        else if (["Não sei", "Não precisa", "Não Testado", "Reiniciando"].includes(op)) pill.classList.add("option-indecisive");
+        const inp = document.createElement("input");
+        inp.type = "radio"; inp.name = chave; inp.value = op;
+        pill.appendChild(inp);
         pill.appendChild(document.createTextNode(op));
         grp.appendChild(pill);
       });
     });
   }
-
   criarGrupoOpcoes("perguntasTriagem", itensTriagem, []);
   criarGrupoOpcoes("listaHardware", itensHardware, ["OK", "Defeito", "Não Testado"]);
 
   function atualizarCampoAcessorios() {
-    const possuiAcessorios = document.getElementById("possuiAcessorios").value === "Sim";
-    const campoLista = document.getElementById("campoListaAcessorios");
-    const descricao = document.getElementById("acessorios");
-
-    campoLista.classList.toggle("hidden", !possuiAcessorios);
-    descricao.required = possuiAcessorios;
-    if (!possuiAcessorios) {
-      descricao.value = "";
-    }
+    const sim = document.getElementById("possuiAcessorios").value === "Sim";
+    document.getElementById("campoListaAcessorios").classList.toggle("hidden", !sim);
+    document.getElementById("acessorios").required = sim;
+    if (!sim) document.getElementById("acessorios").value = "";
   }
 
-  function atualizarIndicadoresPendencia(mostrarPendencias) {
-    const pendencias = [];
-    const areaChecklistOculta = document.getElementById("areaChecklistTecnico").classList.contains("hidden");
-    const seletorCampos = modoAtual === "os"
-      ? "#blocoDadosOS .field, #blocoOS .field"
-      : "#formOS .field, #formOS .checkbox-row";
-
-    document.querySelectorAll(seletorCampos).forEach(campo => {
-      const visivel = campo.getClientRects().length > 0;
-      if (!visivel || (campo.closest("#listaHardware") && areaChecklistOculta)) {
-        campo.classList.remove("has-pending");
-        campo.querySelectorAll("[aria-invalid]").forEach(el => el.removeAttribute("aria-invalid"));
+  function atualizarIndicadoresPendencia(mostrar) {
+    const pend = [];
+    const areaOculta = document.getElementById("areaChecklistTecnico").classList.contains("hidden");
+    const sel = modoAtual === "os" ? "#blocoDadosOS .field, #blocoOS .field" : "#formOS .field, #formOS .checkbox-row";
+    document.querySelectorAll(sel).forEach(c => {
+      const vis = c.getClientRects().length > 0;
+      if (!vis || (c.closest("#listaHardware") && areaOculta)) {
+        c.classList.remove("has-pending");
+        c.querySelectorAll("[aria-invalid]").forEach(e => e.removeAttribute("aria-invalid"));
         return;
       }
-
-      let pendente = false;
-
-      const radios = campo.querySelectorAll('input[type="radio"]');
-      if (radios.length) {
-        const semSelecao = !campo.querySelector('input[type="radio"]:checked');
-        if (semSelecao) pendente = true;
-        radios.forEach(r => {
-          if (mostrarPendencias && semSelecao) {
-            r.setAttribute("aria-invalid", "true");
-          } else {
-            r.removeAttribute("aria-invalid");
-          }
-        });
+      let p = false;
+      const rd = c.querySelectorAll('input[type="radio"]');
+      if (rd.length) {
+        const sem = !c.querySelector('input[type="radio"]:checked');
+        if (sem) p = true;
+        rd.forEach(r => { if (mostrar && sem) r.setAttribute("aria-invalid", "true"); else r.removeAttribute("aria-invalid"); });
       }
-
-      campo.querySelectorAll('input:not([type="radio"]), select, textarea').forEach(controle => {
-        if (controle.willValidate) {
-          const invalido = !controle.checkValidity();
-          if (invalido) pendente = true;
-          if (mostrarPendencias && invalido) {
-            controle.setAttribute("aria-invalid", "true");
-          } else {
-            controle.removeAttribute("aria-invalid");
-          }
+      c.querySelectorAll('input:not([type="radio"]), select, textarea').forEach(ctrl => {
+        if (ctrl.willValidate) {
+          const inv = !ctrl.checkValidity();
+          if (inv) p = true;
+          if (mostrar && inv) ctrl.setAttribute("aria-invalid", "true");
+          else ctrl.removeAttribute("aria-invalid");
         }
       });
-
-      campo.classList.toggle("has-pending", mostrarPendencias && pendente);
-      if (pendente) {
-        const label = campo.querySelector("label, legend");
-        const nome = label ? label.textContent.trim().replace(/\s+/g, " ") : "Campo obrigatório";
-        pendencias.push({ campo, nome });
+      c.classList.toggle("has-pending", mostrar && p);
+      if (p) {
+        const l = c.querySelector("label, legend");
+        pend.push({ campo: c, nome: l ? l.textContent.trim().replace(/\s+/g, " ") : "Campo" });
       }
     });
-
-    const resumo = document.getElementById("validationSummary");
-    resumo.classList.toggle("hidden", !mostrarPendencias || pendencias.length === 0);
-    if (mostrarPendencias && pendencias.length > 0) {
-      document.getElementById("validationMessage").textContent =
-        `⚠ Faltam ${pendencias.length} item(ns). Próximo: ${pendencias[0].nome}`;
+    const res = document.getElementById("validationSummary");
+    res.classList.toggle("hidden", !mostrar || pend.length === 0);
+    if (mostrar && pend.length > 0) {
+      document.getElementById("validationMessage").textContent = `⚠ Faltam ${pend.length} item(ns). Próximo: ${pend[0].nome}`;
     }
-
-    return pendencias;
+    return pend;
   }
-
   function irParaPrimeiraPendencia() {
-    const primeiroCampo = Array.from(document.querySelectorAll("#formOS .has-pending"))
-      .find(campo => campo.getClientRects().length > 0);
-    if (primeiroCampo) {
-      primeiroCampo.scrollIntoView({ behavior: "smooth", block: "center" });
-    }
+    const p = Array.from(document.querySelectorAll("#formOS .has-pending")).find(c => c.getClientRects().length > 0);
+    if (p) p.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+  function calcularEntradaConcluida() {
+    const f = ["fotoEntrada1", "fotoEntrada2"].every(id => document.getElementById(id).files.length > 0);
+    const c = itensHardware.every((_, i) => document.querySelector(`input[name="hw_${i}"]:checked`));
+    return f && c;
   }
 
-  function calcularEntradaConcluida() {
-    const fotos = ["fotoEntrada1", "fotoEntrada2"].every(id =>
-      document.getElementById(id).files.length > 0
-    );
-    const checklist = itensHardware.every((_, i) =>
-      document.querySelector(`input[name="hw_${i}"]:checked`)
-    );
-    return fotos && checklist;
+  /* =============== RELATÓRIO DE DIAGNÓSTICO =============== */
+  function gerarRelatorioDiagnostico() {
+    const defeitos = [], naoTestados = [], ok = [];
+    itensHardware.forEach((nome, idx) => {
+      const v = obterValorRadio("hw_" + idx);
+      if (v === "Defeito") defeitos.push(nome);
+      else if (v === "Não Testado") naoTestados.push(nome);
+      else if (v === "OK") ok.push(nome);
+    });
+    return { defeitos, naoTestados, ok };
+  }
+  function renderizarDiagnostico() {
+    const area = document.getElementById("areaDiagnostico");
+    const cont = document.getElementById("conteudoDiagnostico");
+    if (!area || !cont) return;
+    if (modoAtual !== "tecnico") { area.classList.add("hidden"); return; }
+    const estagio = document.getElementById("estagioChecklist").value;
+    const { defeitos, naoTestados, ok } = gerarRelatorioDiagnostico();
+    const total = defeitos.length + naoTestados.length + ok.length;
+    if (total === 0) { area.classList.add("hidden"); return; }
+    area.classList.remove("hidden");
+    document.getElementById("tituloDiagnostico").textContent = `📋 Relatório de Diagnóstico — ${estagio}`;
+    let html = "";
+    if (defeitos.length > 0) {
+      html += `<div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;padding:12px;margin-bottom:10px;">
+        <strong style="color:#991b1b;display:block;margin-bottom:6px;">⚠ Itens com DEFEITO (${defeitos.length}):</strong>
+        <ul style="margin:0;padding-left:20px;color:#7f1d1d;font-size:0.9rem;">${defeitos.map(d => `<li>${d}</li>`).join("")}</ul>
+      </div>`;
+    } else {
+      html += `<div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:12px;margin-bottom:10px;"><strong style="color:#166534;">✓ Nenhum defeito identificado</strong></div>`;
+    }
+    if (naoTestados.length > 0) {
+      html += `<div style="background:#fef3c7;border:1px solid #fbbf24;border-radius:8px;padding:12px;margin-bottom:10px;">
+        <strong style="color:#92400e;display:block;margin-bottom:6px;">🤔 Itens NÃO TESTADOS (${naoTestados.length}):</strong>
+        <ul style="margin:0;padding-left:20px;color:#78350f;font-size:0.9rem;">${naoTestados.map(d => `<li>${d}</li>`).join("")}</ul>
+      </div>`;
+    }
+    if (ok.length > 0) {
+      html += `<div style="background:#f0f9ff;border:1px solid #7dd3fc;border-radius:8px;padding:12px;">
+        <strong style="color:#075985;display:block;margin-bottom:6px;">✓ Itens OK (${ok.length} de ${itensHardware.length}):</strong>
+        <div style="color:#0c4a6e;font-size:0.85rem;">${ok.join(", ")}</div>
+      </div>`;
+    }
+    cont.innerHTML = html;
   }
 
   function atualizarEstadoEnvio() {
     const estagio = document.getElementById("estagioChecklist").value;
-
     document.getElementById("fotosEntrada").classList.toggle("hidden", estagio !== "ENTRADA");
     document.getElementById("fotosSaida").classList.toggle("hidden", estagio !== "SAÍDA");
     document.getElementById("avisoChecklistFotos").textContent = estagio === "ENTRADA"
       ? "Anexe as duas fotos do aparelho na entrada para liberar a marcação do checklist."
       : "Anexe as duas fotos do aparelho pronto para liberar a marcação do checklist de saída.";
-
-    const fotosEtapaCompletas = (estagio === "ENTRADA"
-      ? ["fotoEntrada1", "fotoEntrada2"]
-      : ["fotoSaida1", "fotoSaida2"]
-    ).every(id => document.getElementById(id).files.length > 0);
-
-    const checklistLiberado = modoAtual === "tecnico" && fotosEtapaCompletas;
-    const checklistFoiLiberado = checklistLiberado && !checklistEstavaLiberado;
-    checklistEstavaLiberado = checklistLiberado;
-
-    document.getElementById("areaChecklistTecnico").classList.toggle("hidden", !checklistLiberado);
-    document.getElementById("avisoChecklistFotos").classList.toggle("hidden", modoAtual !== "tecnico" || fotosEtapaCompletas);
-
-    const fotosEntradaObrigatorias = modoAtual === "tecnico" && estagio === "ENTRADA";
-    const fotosSaidaObrigatorias = modoAtual === "tecnico" && estagio === "SAÍDA";
-    ["fotoEntrada1", "fotoEntrada2"].forEach(id => {
-      document.getElementById(id).required = fotosEntradaObrigatorias;
-    });
-    ["fotoSaida1", "fotoSaida2"].forEach(id => {
-      document.getElementById(id).required = fotosSaidaObrigatorias;
-    });
-
-    if (checklistLiberado && obterValorRadio("liga") === "Não" && !marcacaoAutomaticaPorEtapa[estagio]) {
+    const fotosOk = (estagio === "ENTRADA" ? ["fotoEntrada1", "fotoEntrada2"] : ["fotoSaida1", "fotoSaida2"])
+      .every(id => document.getElementById(id).files.length > 0);
+    const liberado = modoAtual === "tecnico" && fotosOk;
+    const foiLiberado = liberado && !checklistEstavaLiberado;
+    checklistEstavaLiberado = liberado;
+    document.getElementById("areaChecklistTecnico").classList.toggle("hidden", !liberado);
+    document.getElementById("avisoChecklistFotos").classList.toggle("hidden", modoAtual !== "tecnico" || fotosOk);
+    ["fotoEntrada1", "fotoEntrada2"].forEach(id => { document.getElementById(id).required = modoAtual === "tecnico" && estagio === "ENTRADA"; });
+    ["fotoSaida1", "fotoSaida2"].forEach(id => { document.getElementById(id).required = modoAtual === "tecnico" && estagio === "SAÍDA"; });
+    if (liberado && obterValorRadio("liga") === "Não" && !marcacaoAutomaticaPorEtapa[estagio]) {
       marcacaoAutomaticaPorEtapa[estagio] = true;
       marcarTodosNaoTestados();
     }
-
-    const triagemCompleta = itensTriagem.every(item =>
-      document.querySelector(`input[name="${item.id}"]:checked`)
-    );
-    const bancadaCompleta = modoAtual !== "tecnico" || itensHardware.every((_, idx) =>
-      document.querySelector(`input[name="hw_${idx}"]:checked`)
-    );
-
-    if (modoAtual === "tecnico" && estagio === "ENTRADA") {
-      inspecaoEntradaConcluida = calcularEntradaConcluida();
-    }
+    const triagemOk = itensTriagem.every(i => document.querySelector(`input[name="${i.id}"]:checked`));
+    const bancadaOk = modoAtual !== "tecnico" || itensHardware.every((_, i) => document.querySelector(`input[name="hw_${i}"]:checked`));
+    if (modoAtual === "tecnico" && estagio === "ENTRADA") inspecaoEntradaConcluida = calcularEntradaConcluida();
     document.querySelector('#estagioChecklist option[value="SAÍDA"]').disabled = !inspecaoEntradaConcluida;
-
-    const pendencias = atualizarIndicadoresPendencia(validacaoIniciada);
-    const prontoParaEnviar = modoAtual === "os"
-      ? pendencias.length === 0
-      : document.getElementById("formOS").checkValidity()
-        && triagemCompleta
-        && bancadaCompleta
-        && pendencias.length === 0;
-
-    const botaoEnvio = document.querySelector(".btn-submit");
-    botaoEnvio.classList.toggle("awaiting-completion", !prontoParaEnviar);
-    const nomeClienteParaBotao = document.getElementById("cliente").value.trim() || "Cliente";
-    document.getElementById("textoBotaoEnvio").textContent = prontoParaEnviar
-      ? (modoAtual === "tecnico"
-        ? `Enviar Checklist de ${nomeClienteParaBotao} pelo WhatsApp`
-        : modoAtual === "os"
-          ? `Enviar Peças e Serviços de ${nomeClienteParaBotao} pelo WhatsApp`
-          : "Enviar Dados para o WhatsApp da F5TEC")
-      : (modoAtual === "tecnico"
-        ? `Verificar preenchimento do Checklist de ${nomeClienteParaBotao}`
-        : modoAtual === "os"
-          ? `Verificar dados de Peças e Serviços de ${nomeClienteParaBotao}`
-          : "Verificar preenchimento para enviar");
-
-    if (checklistFoiLiberado) {
-      irParaPrimeiraPendencia();
-    }
-    return prontoParaEnviar;
+    const pend = atualizarIndicadoresPendencia(validacaoIniciada);
+    const pronto = modoAtual === "os"
+      ? pend.length === 0
+      : document.getElementById("formOS").checkValidity() && triagemOk && bancadaOk && pend.length === 0;
+    document.querySelector(".btn-submit").classList.toggle("awaiting-completion", !pronto);
+    const nome = document.getElementById("cliente").value.trim() || "Cliente";
+    document.getElementById("textoBotaoEnvio").textContent = pronto
+      ? (modoAtual === "tecnico" ? `Enviar Checklist de ${nome} pelo WhatsApp`
+         : modoAtual === "os" ? `Enviar Peças e Serviços de ${nome} pelo WhatsApp`
+         : "Enviar Dados para o WhatsApp da F5TEC")
+      : (modoAtual === "tecnico" ? `Verificar preenchimento do Checklist de ${nome}`
+         : modoAtual === "os" ? `Verificar dados de Peças e Serviços de ${nome}`
+         : "Verificar preenchimento para enviar");
+    if (foiLiberado) irParaPrimeiraPendencia();
+    renderizarDiagnostico();
+    return pronto;
   }
 
   const formularioOS = document.getElementById("formOS");
@@ -1089,38 +907,26 @@
   formularioOS.addEventListener("change", atualizarEstadoEnvio);
   document.getElementById("irParaPendencia").addEventListener("click", irParaPrimeiraPendencia);
   document.getElementById("possuiAcessorios").addEventListener("change", atualizarCampoAcessorios);
-
   document.getElementById("formaPagamento").addEventListener("change", atualizarCamposPagamento);
-  document.getElementById("parcelasCartao").addEventListener("change", () => {
-    atualizarTaxaCartao();
-    renderizarPagamento();
-  });
+  document.getElementById("parcelasCartao").addEventListener("change", () => { atualizarTaxaCartao(); renderizarPagamento(); });
   document.getElementById("taxaCartao").addEventListener("input", renderizarPagamento);
 
-  const formularioAcessoProtegido = document.getElementById("formAcessoProtegido");
-  formularioAcessoProtegido.addEventListener("submit", event => {
-    event.preventDefault();
+  const formAcesso = document.getElementById("formAcessoProtegido");
+  formAcesso.addEventListener("submit", e => {
+    e.preventDefault();
     const senha = document.getElementById("senhaAbas");
     const erro = document.getElementById("erroSenhaAbas");
-    if (senha.value !== SENHA_ABAS_PROTEGIDAS) {
-      erro.classList.remove("hidden");
-      senha.select();
-      return;
-    }
-
-    const modo = modoProtegidoPendente;
+    if (senha.value !== SENHA_ABAS_PROTEGIDAS) { erro.classList.remove("hidden"); senha.select(); return; }
+    const m = modoProtegidoPendente;
     modoProtegidoPendente = null;
-    formularioAcessoProtegido.reset();
+    formAcesso.reset();
     document.getElementById("dialogAcessoProtegido").classList.add("hidden");
     erro.classList.add("hidden");
-    if (modo) {
-      alternarModo(modo, true);
-    }
+    if (m) alternarModo(m, true);
   });
-
   document.getElementById("cancelarSenha").addEventListener("click", () => {
     modoProtegidoPendente = null;
-    formularioAcessoProtegido.reset();
+    formAcesso.reset();
     document.getElementById("dialogAcessoProtegido").classList.add("hidden");
     document.getElementById("erroSenhaAbas").classList.add("hidden");
   });
@@ -1131,26 +937,19 @@
     validacaoIniciada = true;
     if (estagioAnterior === "ENTRADA" && seletorEstagio.value === "SAÍDA" && !inspecaoEntradaConcluida) {
       alert("Conclua as duas fotos e todos os itens do checklist de entrada antes de avançar para a inspeção de saída.");
-      seletorEstagio.value = estagioAnterior;
-      atualizarEstadoEnvio();
-      irParaPrimeiraPendencia();
-      return;
+      seletorEstagio.value = estagioAnterior; atualizarEstadoEnvio(); irParaPrimeiraPendencia(); return;
     }
-
     if (estagioAnterior !== seletorEstagio.value) {
-      document.querySelectorAll("#listaHardware input[type='radio']").forEach(input => {
-        input.checked = false;
-      });
+      document.querySelectorAll("#listaHardware input[type='radio']").forEach(i => { i.checked = false; });
       marcacaoAutomaticaPorEtapa[seletorEstagio.value] = false;
     }
-
     estagioAnterior = seletorEstagio.value;
     atualizarEstadoEnvio();
     irParaPrimeiraPendencia();
   });
 
-  function alternarModo(modo, senhaValidada) {
-    if (["tecnico", "os"].includes(modo) && !abasProtegidasDesbloqueadas && !senhaValidada) {
+  function alternarModo(modo, senhaOk) {
+    if (["tecnico", "os"].includes(modo) && !abasProtegidasDesbloqueadas && !senhaOk) {
       modoProtegidoPendente = modo;
       document.getElementById("senhaAbas").value = "";
       document.getElementById("erroSenhaAbas").classList.add("hidden");
@@ -1158,42 +957,29 @@
       document.getElementById("senhaAbas").focus();
       return;
     }
-
-    if (senhaValidada) {
-      abasProtegidasDesbloqueadas = true;
-    }
-    if (modo === "cliente") {
-      abasProtegidasDesbloqueadas = false;
-    }
-    if (modo === "tecnico" || modo === "os") {
-      validacaoIniciada = true;
-    }
-
+    if (senhaOk) abasProtegidasDesbloqueadas = true;
+    if (modo === "cliente") abasProtegidasDesbloqueadas = false;
+    if (modo === "tecnico" || modo === "os") validacaoIniciada = true;
     modoAtual = modo;
-
     if (modo === "tecnico" && document.getElementById("estagioChecklist").value === "ENTRADA") {
       inspecaoEntradaConcluida = calcularEntradaConcluida();
     }
-
-    const btnCliente = document.getElementById("btnModoCliente");
-    const btnTecnico = document.getElementById("btnModoTecnico");
-    const btnOS = document.getElementById("btnModoOS");
-    btnCliente.classList.toggle("active", modo === "cliente");
-    btnTecnico.classList.toggle("active", modo === "tecnico");
-    btnOS.classList.toggle("active", modo === "os");
-    btnCliente.setAttribute("aria-pressed", modo === "cliente" ? "true" : "false");
-    btnTecnico.setAttribute("aria-pressed", modo === "tecnico" ? "true" : "false");
-    btnOS.setAttribute("aria-pressed", modo === "os" ? "true" : "false");
+    const bC = document.getElementById("btnModoCliente");
+    const bT = document.getElementById("btnModoTecnico");
+    const bO = document.getElementById("btnModoOS");
+    bC.classList.toggle("active", modo === "cliente");
+    bT.classList.toggle("active", modo === "tecnico");
+    bO.classList.toggle("active", modo === "os");
+    bC.setAttribute("aria-pressed", modo === "cliente" ? "true" : "false");
+    bT.setAttribute("aria-pressed", modo === "tecnico" ? "true" : "false");
+    bO.setAttribute("aria-pressed", modo === "os" ? "true" : "false");
     document.getElementById("blocoTecnico").classList.toggle("hidden", modo !== "tecnico");
     document.getElementById("blocoOS").classList.toggle("hidden", modo !== "os");
     document.getElementById("blocoTriagem").classList.toggle("hidden", modo === "os");
     document.getElementById("blocoTermos").classList.toggle("hidden", modo === "os");
-
     atualizarCamposPagamento();
     atualizarEstadoEnvio();
-    if (modo === "tecnico" || modo === "os") {
-      irParaPrimeiraPendencia();
-    }
+    if (modo === "tecnico" || modo === "os") irParaPrimeiraPendencia();
   }
 
   function addPonto(num, btn) {
@@ -1203,128 +989,304 @@
       document.getElementById("senha").value = "Padrão: " + sequenciaPadrao.join(" -> ");
     }
   }
-
   function limparPadrao() {
     sequenciaPadrao = [];
     document.querySelectorAll(".dot-btn").forEach(b => b.classList.remove("selected"));
     document.getElementById("senha").value = "";
   }
-
   function marcarTodosNaoTestados() {
     itensHardware.forEach((item, idx) => {
       if (["Aro", "Tampa", "Lentes da câmera"].includes(item)) return;
-      const grp = document.getElementById("grp_hw_" + idx);
-      const alvo = grp.querySelector('input[value="Não Testado"]');
+      const alvo = document.getElementById("grp_hw_" + idx).querySelector('input[value="Não Testado"]');
       if (alvo) alvo.checked = true;
     });
   }
-
   function obterValorRadio(nome) {
     const el = document.querySelector(`input[name="${nome}"]:checked`);
     return el ? el.value : "Não informado";
   }
-
   function abrirWhatsApp(url) {
     const a = document.createElement("a");
-    a.href = url;
-    a.target = "_blank";
-    a.rel = "noopener noreferrer";
-    a.style.display = "none";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    a.href = url; a.target = "_blank"; a.rel = "noopener noreferrer"; a.style.display = "none";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
   }
-
   function obterFotosEtapaAtual() {
-    const estagio = document.getElementById("estagioChecklist").value;
-    const ids = estagio === "ENTRADA"
-      ? ["fotoEntrada1", "fotoEntrada2"]
-      : ["fotoSaida1", "fotoSaida2"];
-
-    const arquivos = [];
+    const est = document.getElementById("estagioChecklist").value;
+    const ids = est === "ENTRADA" ? ["fotoEntrada1", "fotoEntrada2"] : ["fotoSaida1", "fotoSaida2"];
+    const arr = [];
     ids.forEach(id => {
-      const input = document.getElementById(id);
-      if (input && input.files) {
-        Array.from(input.files).forEach(file => arquivos.push(file));
-      }
+      const inp = document.getElementById(id);
+      if (inp && inp.files) Array.from(inp.files).forEach(f => arr.push(f));
     });
-    return arquivos;
+    return arr;
   }
 
-  function enviarMensagemComFotos(numero, texto, arquivos) {
-    const url = `https://wa.me/${numero}?text=${encodeURIComponent(texto)}`;
-
-    if (!arquivos.length) {
-      abrirWhatsApp(url);
-      return;
+  /* =============== LINK DE RETORNO (comprimido) =============== */
+  function utf8ToBase64Url(str) {
+    const bytes = new TextEncoder().encode(str);
+    let bin = "";
+    for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+    return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  }
+  function base64UrlToUtf8(b64url) {
+    let b64 = b64url.replace(/-/g, "+").replace(/_/g, "/");
+    while (b64.length % 4) b64 += "=";
+    const bin = atob(b64);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return new TextDecoder().decode(bytes);
+  }
+  function comprimirPayload(jsonStr) {
+    if (typeof LZString !== "undefined" && LZString.compressToEncodedURIComponent) {
+      try { return "L" + LZString.compressToEncodedURIComponent(jsonStr); } catch (e) {}
     }
-
-    let podeCompartilhar = false;
-    if (navigator.share && navigator.canShare) {
-      try {
-        podeCompartilhar = navigator.canShare({ files: arquivos });
-      } catch (erro) {
-        podeCompartilhar = false;
-      }
+    return "B" + utf8ToBase64Url(jsonStr);
+  }
+  function descomprimirPayload(encoded) {
+    if (!encoded) throw new Error("payload vazio");
+    const flag = encoded.charAt(0);
+    const corpo = encoded.substring(1);
+    if (flag === "L") {
+      if (typeof LZString === "undefined") throw new Error("LZString não carregado");
+      const r = LZString.decompressFromEncodedURIComponent(corpo);
+      if (!r) throw new Error("decompressão vazia");
+      return r;
     }
-
-    if (!podeCompartilhar) {
-      abrirWhatsApp(url);
-      alert("Seu navegador não permite anexar as fotos automaticamente.\n\nO WhatsApp foi aberto com o texto do checklist — anexe as 2 fotos manualmente (elas continuam carregadas no formulário).");
-      return;
-    }
-
-    navigator.share({ files: arquivos, text: texto })
-      .catch(erro => {
-        if (erro && erro.name === "AbortError") return;
-        console.warn("Falha ao compartilhar fotos:", erro);
-        abrirWhatsApp(url);
-        alert("Não foi possível anexar as fotos automaticamente.\n\nO WhatsApp foi aberto com o texto do checklist — anexe as 2 fotos manualmente.");
+    return base64UrlToUtf8(corpo);
+  }
+  function gerarLinkCheckin(modo) {
+    const dados = {
+      cliente: document.getElementById("cliente").value,
+      cpf: document.getElementById("cpf").value,
+      telefone: document.getElementById("telefone").value,
+      telefoneAdicional: document.getElementById("telefoneAdicional").value,
+      marca: document.getElementById("marca").value,
+      modelo: document.getElementById("modelo").value,
+      cor: document.getElementById("cor").value,
+      tipo: document.getElementById("tipo").value,
+      serie: document.getElementById("serie").value,
+      possuiAcessorios: document.getElementById("possuiAcessorios").value,
+      acessorios: document.getElementById("acessorios").value,
+      senha: document.getElementById("senha").value,
+      defeito: document.getElementById("defeito").value,
+      observacao: document.getElementById("observacao").value,
+      triagem: {}
+    };
+    itensTriagem.forEach(i => { dados.triagem[i.id] = obterValorRadio(i.id); });
+    const enc = comprimirPayload(JSON.stringify(dados));
+    const m = modo ? `&m=${modo}` : "";
+    return `${URL_BASE_OFICIAL}?d=${encodeURIComponent(enc)}${m}`;
+  }
+  function carregarDadosDaURL() {
+    const params = new URLSearchParams(window.location.search);
+    const d = params.get("d");
+    const m = params.get("m");
+    if (!d) return false;
+    try {
+      const jsonStr = descomprimirPayload(d);
+      const dados = JSON.parse(jsonStr);
+      ["cliente","cpf","telefone","telefoneAdicional","marca","modelo","cor","tipo","serie","senha","defeito","observacao"].forEach(id => {
+        if (dados[id] != null) {
+          const el = document.getElementById(id);
+          if (el) el.value = dados[id];
+        }
       });
+      if (dados.possuiAcessorios) {
+        document.getElementById("possuiAcessorios").value = dados.possuiAcessorios;
+        atualizarCampoAcessorios();
+        if (dados.acessorios) document.getElementById("acessorios").value = dados.acessorios;
+      }
+      if (dados.triagem) {
+        itensTriagem.forEach(item => {
+          const val = dados.triagem[item.id];
+          if (!val || val === "Não informado") return;
+          const inp = document.querySelector(`input[name="${item.id}"][value="${CSS.escape(val)}"]`);
+          if (inp) inp.checked = true;
+        });
+      }
+      abasProtegidasDesbloqueadas = true;
+      const destino = m === "os" ? "os" : "tecnico";
+      setTimeout(() => {
+        alternarModo(destino, true);
+        setTimeout(() => irParaPrimeiraPendencia(), 100);
+      }, 80);
+      return true;
+    } catch (e) {
+      console.error("Falha ao carregar dados da URL:", e);
+      setTimeout(() => alert("O link de retorno estava incompleto ou foi cortado.\n\nOs dados do cliente podem ser visualizados na mensagem do WhatsApp e digitados novamente se necessário."), 200);
+      return false;
+    }
   }
 
-  function enviarWhatsApp(e) {
+  /* =============== COMPRESSÃO E ENVIO DAS FOTOS =============== */
+  function comprimirImagem(file, maxDim, quality) {
+    maxDim = maxDim || 1600;
+    quality = quality || 0.82;
+    return new Promise(resolve => {
+      try {
+        const r = new FileReader();
+        r.onload = ev => {
+          const img = new Image();
+          img.onload = () => {
+            try {
+              let w = img.naturalWidth, h = img.naturalHeight;
+              if (w > maxDim || h > maxDim) {
+                const ratio = Math.min(maxDim / w, maxDim / h);
+                w = Math.round(w * ratio); h = Math.round(h * ratio);
+              }
+              const c = document.createElement("canvas");
+              c.width = w; c.height = h;
+              c.getContext("2d").drawImage(img, 0, 0, w, h);
+              c.toBlob(blob => {
+                if (!blob) return resolve(file);
+                const nome = (file.name || "foto").replace(/\.[^.]+$/, "") + ".jpg";
+                resolve(new File([blob], nome, { type: "image/jpeg" }));
+              }, "image/jpeg", quality);
+            } catch (e) { resolve(file); }
+          };
+          img.onerror = () => resolve(file);
+          img.src = ev.target.result;
+        };
+        r.onerror = () => resolve(file);
+        r.readAsDataURL(file);
+      } catch (e) { resolve(file); }
+    });
+  }
+  async function uploadFotoTemporaria(file) {
+    try {
+      const fd = new FormData();
+      fd.append("reqtype", "fileupload"); fd.append("fileToUpload", file);
+      const res = await fetch("https://catbox.moe/user/api.php", { method: "POST", body: fd });
+      if (res.ok) { const t = (await res.text()).trim(); if (t.startsWith("http")) return t; }
+    } catch (e) { console.warn("catbox:", e); }
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("https://tmpfiles.org/api/v1/upload", { method: "POST", body: fd });
+      if (res.ok) {
+        const data = await res.json();
+        const u = data && data.data && data.data.url;
+        if (u) return u.replace("tmpfiles.org/", "tmpfiles.org/dl/");
+      }
+    } catch (e) { console.warn("tmpfiles:", e); }
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("https://0x0.st", { method: "POST", body: fd });
+      if (res.ok) { const t = (await res.text()).trim(); if (t.startsWith("http")) return t; }
+    } catch (e) { console.warn("0x0:", e); }
+    return null;
+  }
+  function mostrarFotosParaDownload(arquivos, waUrl) {
+    const modal = document.createElement("div");
+    modal.style.cssText = "position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;padding:16px;overflow:auto;";
+    const box = document.createElement("div");
+    box.style.cssText = "background:#fff;padding:20px;border-radius:12px;max-width:500px;width:100%;max-height:90vh;overflow:auto;";
+    const urls = [];
+    let html = `<h2 style="margin-top:0;font-size:1.1rem;">📸 Fotos prontas</h2>
+      <p style="font-size:0.88rem;color:#4b5563;">Seu navegador não permite anexar fotos automaticamente. Baixe cada foto e anexe manualmente na conversa do WhatsApp.</p>`;
+    arquivos.forEach((f, i) => {
+      const u = URL.createObjectURL(f); urls.push(u);
+      html += `<div style="margin-bottom:12px;">
+        <img src="${u}" style="max-width:100%;border-radius:6px;display:block;margin-bottom:6px;">
+        <a href="${u}" download="f5tec_foto_${i+1}.jpg" style="display:inline-block;padding:8px 14px;background:#0055ff;color:#fff;text-decoration:none;border-radius:6px;font-weight:600;font-size:0.9rem;">Baixar Foto ${i+1}</a>
+      </div>`;
+    });
+    html += `<a href="${waUrl}" target="_blank" rel="noopener" style="display:block;margin-top:12px;padding:12px;background:#16a34a;color:#fff;text-align:center;text-decoration:none;border-radius:6px;font-weight:700;">Abrir WhatsApp</a>
+      <button type="button" id="fecharModalFotos" style="display:block;margin-top:8px;width:100%;padding:10px;background:#e5e7eb;border:none;border-radius:6px;cursor:pointer;font-weight:600;">Fechar</button>`;
+    box.innerHTML = html;
+    modal.appendChild(box);
+    document.body.appendChild(modal);
+    document.getElementById("fecharModalFotos").onclick = () => {
+      document.body.removeChild(modal);
+      urls.forEach(u => URL.revokeObjectURL(u));
+    };
+  }
+  async function enviarMensagemComFotos(numero, textoBase, arquivos) {
+    const waUrl = `https://wa.me/${numero}?text=${encodeURIComponent(textoBase)}`;
+    if (!arquivos.length) { abrirWhatsApp(waUrl); return; }
+    const comps = [];
+    for (const f of arquivos) comps.push(await comprimirImagem(f));
+    if (navigator.share) {
+      try { await navigator.share({ files: comps, text: textoBase }); return; }
+      catch (e) { if (e && e.name === "AbortError") return; console.warn("Web Share falhou:", e); }
+    }
+    let urls = [];
+    try {
+      const r = await Promise.all(comps.map(f =>
+        Promise.race([uploadFotoTemporaria(f), new Promise(res => setTimeout(() => res(null), 15000))])
+      ));
+      urls = r.filter(u => u);
+    } catch (e) { console.warn("Upload falhou:", e); }
+    let final = textoBase;
+    if (urls.length) {
+      final += `\n\n📸 *Fotos da inspeção (links):*`;
+      urls.forEach((u, i) => { final += `\nFoto ${i+1}: ${u}`; });
+    }
+    abrirWhatsApp(`https://wa.me/${numero}?text=${encodeURIComponent(final)}`);
+    if (!urls.length) setTimeout(() => mostrarFotosParaDownload(comps, waUrl), 400);
+  }
+
+  /* =============== ENVIO =============== */
+  async function enviarWhatsApp(e) {
     e.preventDefault();
     validacaoIniciada = true;
-    if (!atualizarEstadoEnvio()) {
-      irParaPrimeiraPendencia();
-      return;
-    }
-
+    if (!atualizarEstadoEnvio()) { irParaPrimeiraPendencia(); return; }
     const dataAtual = new Date().toLocaleDateString("pt-BR");
-    let msg;
+    let msg = "";
     let numeroDestino = NUMERO_CLIENTE;
 
     if (modoAtual === "tecnico") {
-      const telefoneCliente = document.getElementById("telefone").value.replace(/\D/g, "");
-      const telefoneComCodigoPais = telefoneCliente.length === 10 || telefoneCliente.length === 11
-        ? `55${telefoneCliente}`
-        : telefoneCliente;
-
-      if (!/^55\d{10,11}$/.test(telefoneComCodigoPais)) {
-        alert("Telefone do cliente inválido. Verifique DDD + número antes de enviar.");
-        document.getElementById("telefone").focus();
-        return;
+      const tel = document.getElementById("telefone").value.replace(/\D/g, "");
+      const telPais = (tel.length === 10 || tel.length === 11) ? `55${tel}` : tel;
+      if (!/^55\d{10,11}$/.test(telPais)) {
+        alert("Telefone do cliente inválido."); document.getElementById("telefone").focus(); return;
       }
-
-      numeroDestino = telefoneComCodigoPais;
-
+      numeroDestino = telPais;
       const estagioAtual = document.getElementById("estagioChecklist").value;
       const fotos = obterFotosEtapaAtual();
+      const diag = gerarRelatorioDiagnostico();
 
-      msg = `*F5TEC - CONFERÊNCIA DO CHECKLIST*\n`;
-      msg += `Olá, ${document.getElementById("cliente").value}! Confira o checklist técnico do seu aparelho:\n\n`;
-      msg += `• Marca: ${document.getElementById("marca").value}\n`;
-      msg += `• Modelo: ${document.getElementById("modelo").value}\n`;
-      msg += `• Estágio da inspeção: ${estagioAtual}\n`;
-      msg += `• Fotos registradas no app: ${document.getElementById("fotosApp").value}\n`;
-      msg += `• Fotos da inspeção de ${estagioAtual}: ${fotos.length} foto(s)\n\n`;
+      msg = `*F5TEC - CHECKLIST E DIAGNÓSTICO*\n`;
+      msg += `Olá, ${document.getElementById("cliente").value}!\n\n`;
+      msg += `*Aparelho:* ${document.getElementById("marca").value} ${document.getElementById("modelo").value}\n`;
+      msg += `*Estágio:* ${estagioAtual}\n\n`;
+
+      msg += `*📋 RELATÓRIO DE DIAGNÓSTICO — ${estagioAtual}*\n`;
+      if (diag.defeitos.length > 0) {
+        msg += `\n⚠ *Itens com DEFEITO (${diag.defeitos.length}):*\n`;
+        diag.defeitos.forEach(d => { msg += `• ${d}\n`; });
+      } else {
+        msg += `\n✓ Nenhum defeito identificado\n`;
+      }
+      if (diag.naoTestados.length > 0) {
+        msg += `\n🤔 *Itens NÃO TESTADOS (${diag.naoTestados.length}):*\n`;
+        diag.naoTestados.forEach(d => { msg += `• ${d}\n`; });
+      }
+      msg += `\n✓ Itens OK: ${diag.ok.length} de ${itensHardware.length}\n\n`;
+
+      msg += `*CHECKLIST DETALHADO:*\n`;
       itensHardware.forEach((nome, idx) => {
         msg += `• ${nome}: *${obterValorRadio("hw_" + idx)}*\n`;
       });
-      msg += `\nPor favor, confira as informações e responda a esta mensagem caso tenha alguma observação.`;
 
-      enviarMensagemComFotos(numeroDestino, msg, fotos);
+      // ✅ PERGUNTA DE APROVAÇÃO DO DIAGNÓSTICO
+      msg += `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+      msg += `*📋 APROVAÇÃO DO DIAGNÓSTICO*\n\n`;
+      msg += `Com base no checklist acima, precisamos da sua confirmação para prosseguir:\n\n`;
+      msg += `1️⃣ *Quero reparar TUDO* que foi identificado no diagnóstico\n`;
+      msg += `2️⃣ *Quero reparar só o NECESSÁRIO* para o aparelho funcionar\n`;
+      msg += `3️⃣ *Não autorizo reparo agora* - vou retirar o aparelho sem conserto\n\n`;
+      msg += `👉 *Responda com o número da opção desejada (1, 2 ou 3).*\n\n`;
+      msg += `Se você aprovar (opção 1 ou 2), já seguimos com o orçamento detalhado de peças e serviços e enviamos o valor para sua aprovação final.\n`;
+      msg += `━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+
+      const btn = document.querySelector(".btn-submit");
+      const txtOrig = document.getElementById("textoBotaoEnvio").textContent;
+      btn.disabled = true;
+      document.getElementById("textoBotaoEnvio").textContent = "Preparando fotos...";
+      try { await enviarMensagemComFotos(numeroDestino, msg, fotos); }
+      finally { btn.disabled = false; document.getElementById("textoBotaoEnvio").textContent = txtOrig; }
       return;
     }
 
@@ -1338,9 +1300,17 @@
       msg += `${gerarResumoRegistrosOS()}\n\n`;
       msg += `${gerarResumoPagamento()}\n`;
     } else {
-      msg = `*F5TEC - CHECK-IN DE ORDEM DE SERVIÇO*\n`;
-      msg += `Data Entrada: ${dataAtual}\n\n`;
+      // ========== CHECK-IN (cliente → F5TEC) ==========
+      // 🔗 LINKS DE RETORNO NO TOPO (para não serem truncados)
+      const linkTecnico = gerarLinkCheckin("tecnico");
+      const linkOS = gerarLinkCheckin("os");
 
+      msg = `🔗 *LINK PARA O TÉCNICO (Checklist de Bancada):*\n${linkTecnico}\n\n`;
+      msg += `🔗 *LINK PARA ORÇAMENTO (Peças/Serviços):*\n${linkOS}\n\n`;
+      msg += `━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+
+      msg += `*F5TEC - CHECK-IN DE ORDEM DE SERVIÇO*\n`;
+      msg += `Data Entrada: ${dataAtual}\n\n`;
       msg += `*1. DADOS DA O.S. (TELA PRINCIPAL)*\n`;
       msg += `• Cliente: ${document.getElementById("cliente").value}\n`;
       msg += `• CPF: ${document.getElementById("cpf").value || "Não informado"}\n`;
@@ -1351,59 +1321,37 @@
       msg += `• Cor: ${document.getElementById("cor").value}\n`;
       msg += `• Nº Série/IMEI: ${document.getElementById("serie").value || "N/I"}\n`;
       msg += `• Tipo: ${document.getElementById("tipo").value}\n`;
-      const possuiAcessorios = document.getElementById("possuiAcessorios").value;
-      const descricaoAcessorios = possuiAcessorios === "Sim"
-        ? `Sim: ${document.getElementById("acessorios").value}`
-        : "Não";
-      msg += `• Acessórios: ${descricaoAcessorios}\n`;
+      const pA = document.getElementById("possuiAcessorios").value;
+      const aD = pA === "Sim" ? `Sim: ${document.getElementById("acessorios").value}` : "Não";
+      msg += `• Acessórios: ${aD}\n`;
       msg += `• Observação: ${document.getElementById("observacao").value || "Nenhuma"}\n`;
       msg += `• Senha: ${document.getElementById("senha").value}\n`;
       msg += `• Defeito/Reclamação: ${document.getElementById("defeito").value}\n\n`;
-
       msg += `*2. CHECK-IN (HISTÓRICO DE ENTRADA)*\n`;
-      itensTriagem.forEach(item => {
-        msg += `• ${item.label} *${obterValorRadio(item.id)}*\n`;
-      });
-
+      itensTriagem.forEach(i => { msg += `• ${i.label} *${obterValorRadio(i.id)}*\n`; });
       msg += `\n*4. ACEITE LEGAL DIGITAL*\n`;
-      msg += `• Confirmado: Li e aceito os Termos de Serviço e Garantia F5TEC (Cláusula 4.1).`;
+      msg += `• Confirmado: Li e aceito os Termos de Serviço e Garantia F5TEC (Cláusula 4.1).\n`;
     }
 
-    const url = `https://wa.me/${numeroDestino}?text=${encodeURIComponent(msg)}`;
-    abrirWhatsApp(url);
+    abrirWhatsApp(`https://wa.me/${numeroDestino}?text=${encodeURIComponent(msg)}`);
   }
 
   function resetarAtendimento() {
     if (!confirm("Limpar todos os dados do atendimento atual? Esta ação não pode ser desfeita.")) return;
-
     formularioOS.reset();
-
-    registrosOS = [];
-    proximoRegistroId = 1;
+    registrosOS = []; proximoRegistroId = 1;
     renderizarRegistrosOS();
-
     sequenciaPadrao = [];
     document.querySelectorAll(".dot-btn").forEach(b => b.classList.remove("selected"));
-
-    document.querySelectorAll('#formOS input[type="radio"]').forEach(input => {
-      input.checked = false;
-    });
-
-    inspecaoEntradaConcluida = false;
-    checklistEstavaLiberado = false;
-    validacaoIniciada = false;
-    marcacaoAutomaticaPorEtapa.ENTRADA = false;
-    marcacaoAutomaticaPorEtapa["SAÍDA"] = false;
-
-    seletorEstagio.value = "ENTRADA";
-    estagioAnterior = "ENTRADA";
-
+    document.querySelectorAll('#formOS input[type="radio"]').forEach(i => { i.checked = false; });
+    inspecaoEntradaConcluida = false; checklistEstavaLiberado = false; validacaoIniciada = false;
+    marcacaoAutomaticaPorEtapa.ENTRADA = false; marcacaoAutomaticaPorEtapa["SAÍDA"] = false;
+    seletorEstagio.value = "ENTRADA"; estagioAnterior = "ENTRADA";
     alternarModo("cliente");
-
-    atualizarCampoAcessorios();
-    atualizarCamposPagamento();
-    atualizarEstadoEnvio();
-
+    atualizarCampoAcessorios(); atualizarCamposPagamento(); atualizarEstadoEnvio();
+    if (window.history && window.history.replaceState) {
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -1412,6 +1360,7 @@
   atualizarCamposPagamento();
   atualizarEstadoEnvio();
   renderizarRegistrosOS();
+  carregarDadosDaURL();
 </script>
 </body>
 </html>
