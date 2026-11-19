@@ -1,0 +1,1149 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>F5TEC | Check-in e Checklist de OS</title>
+  <style>
+    :root {
+      --primary: #000000;
+      --primary-dark: #000000;
+      --bg: #f4f6f9;
+      --card: #ffffff;
+      --text: #1f2937;
+      --accent: #0055ff;
+      --border: #d1d5db;
+      --danger: #dc2626;
+      --success: #16a34a;
+    }
+    * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { margin: 0; background: var(--bg); color: var(--text); padding-bottom: 40px; }
+    header { background: var(--primary); color: #fff; padding: 18px 16px; text-align: center; box-shadow: 0 2px 6px rgba(0,0,0,0.15); }
+    .header-logo { display: block; width: 220px; max-width: 100%; height: 90px; object-fit: contain; margin: 0 auto 8px; }
+    header h1 { margin: 0; font-size: 1.25rem; }
+    header p { margin: 4px 0 0; font-size: 0.85rem; opacity: 0.9; }
+    .container { max-width: 600px; margin: 16px auto; padding: 0 12px; }
+    .mode-switch { display: flex; gap: 8px; margin-bottom: 16px; background: #e5e7eb; padding: 4px; border-radius: 8px; }
+    .mode-btn { flex: 1; padding: 10px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; background: transparent; color: var(--accent); }
+    .mode-btn.active { background: var(--card); color: var(--primary); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    #dialogAcessoProtegido {
+      position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center;
+      padding: 16px; background: rgba(0, 0, 0, 0.55);
+    }
+    #dialogAcessoProtegido.hidden { display: none; }
+    .password-dialog {
+      width: min(100%, 380px); padding: 20px; background: var(--card);
+      border-radius: 10px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    }
+    .password-dialog h2 { margin: 0 0 14px; font-size: 1.05rem; }
+    .password-dialog input {
+      width: 100%; padding: 10px; border: 1px solid var(--border);
+      border-radius: 6px; font-size: 1rem;
+    }
+    .password-dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+    .password-dialog-actions button {
+      padding: 9px 14px; border: 0; border-radius: 6px; font-weight: 600; cursor: pointer;
+    }
+    #confirmarSenha { background: var(--accent); color: #fff; }
+    #cancelarSenha { background: #e5e7eb; color: var(--text); }
+    .card { background: var(--card); border-radius: 10px; padding: 16px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+    .card h2 { margin-top: 0; font-size: 1.05rem; color: var(--primary); border-bottom: 1px solid #eee; padding-bottom: 8px; }
+    .field { margin-bottom: 14px; }
+    label, fieldset.field > legend { display: block; font-size: 0.88rem; font-weight: 600; margin-bottom: 5px; padding: 0; }
+    input[type="text"], input[type="tel"], input[type="file"], select, textarea {
+      width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.95rem;
+    }
+    input[type="text"]:focus, input[type="tel"]:focus, input[type="file"]:focus, select:focus, textarea:focus {
+      outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0, 85, 255, 0.15);
+    }
+    textarea { resize: vertical; min-height: 70px; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .pattern-helper { background: #f8fafc; border: 1px dashed var(--accent); border-radius: 8px; padding: 10px; text-align: center; margin-top: 6px; }
+    .pattern-grid { display: grid; grid-template-columns: repeat(3, 42px); gap: 8px; justify-content: center; margin: 8px 0; }
+    .dot-btn {
+      width: 42px; height: 42px; border-radius: 50%; border: 2px solid var(--primary);
+      background: #fff; color: var(--primary); font-weight: bold; cursor: pointer;
+    }
+    .dot-btn.selected { background: var(--primary); color: #fff; }
+    .btn-link {
+      background: transparent; border: none; color: var(--accent);
+      font-size: 0.75rem; cursor: pointer; padding: 4px; text-decoration: underline;
+    }
+    .radio-group { display: flex; gap: 6px; flex-wrap: wrap; }
+    .radio-pill {
+      flex: 1; text-align: center; padding: 8px 6px; border: 1px solid var(--border);
+      border-radius: 6px; font-size: 0.85rem; cursor: pointer; user-select: none; background: #fff;
+      position: relative;
+    }
+    .radio-pill input {
+      position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none;
+    }
+    .radio-pill:has(input:checked) {
+      background: var(--primary); color: #fff; border-color: var(--primary); font-weight: 600;
+    }
+    .radio-pill:has(input:focus-visible) {
+      outline: 2px solid var(--accent); outline-offset: 2px;
+    }
+    .radio-pill.option-positive:has(input:checked) {
+      background: var(--success); color: #fff; border-color: var(--success);
+    }
+    .radio-pill.option-positive:has(input:checked)::after { content: " ✓"; }
+    .radio-pill.option-negative:has(input:checked) {
+      background: var(--danger); color: #fff; border-color: var(--danger);
+    }
+    .radio-pill.option-negative:has(input:checked)::after { content: " ✕"; }
+    .radio-pill.option-indecisive:has(input:checked) {
+      background: var(--accent); color: #fff; border-color: var(--accent);
+    }
+    .radio-pill.option-indecisive:has(input:checked)::after { content: " 🤔"; }
+    fieldset.field {
+      border: 0; padding: 0; margin: 0 0 14px; min-width: 0;
+    }
+    fieldset.field > legend { margin-bottom: 5px; width: 100%; }
+    .terms-box {
+      max-height: 190px; overflow-y: auto; background: #f9fafb; border: 1px solid var(--border);
+      padding: 12px; border-radius: 6px; font-size: 0.8rem; line-height: 1.45; color: #374151; margin-bottom: 12px;
+    }
+    .checkbox-row { display: flex; align-items: flex-start; gap: 10px; font-size: 0.88rem; font-weight: 600; }
+    .checkbox-row input { width: 18px; height: 18px; margin-top: 2px; flex-shrink: 0; }
+    .field.has-pending > label,
+    .field.has-pending > legend,
+    .checkbox-row.has-pending { color: var(--danger); }
+    .field.has-pending > label::after,
+    .field.has-pending > legend::after,
+    .checkbox-row.has-pending::after {
+      content: " ⚠"; color: var(--danger); font-weight: bold;
+    }
+    .field.has-pending input:not([type="radio"]),
+    .field.has-pending select,
+    .field.has-pending textarea { border-color: var(--danger); }
+    .field.has-pending .radio-pill:not(:has(input:checked)) { border-color: var(--danger); }
+    .validation-summary {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      background: #fef2f2; border: 1px solid #fca5a5; color: #991b1b;
+      padding: 10px 12px; border-radius: 6px; margin-bottom: 14px; font-size: 0.9rem;
+    }
+    .validation-summary button {
+      border: none; background: transparent; color: #991b1b; text-decoration: underline;
+      font-weight: 600; cursor: pointer; white-space: nowrap;
+    }
+    .btn-submit {
+      display: flex; align-items: center; justify-content: center; gap: 12px;
+      width: 100%; min-height: 64px; padding: 18px 20px; background: var(--success); color: #fff; border: none;
+      border-radius: 8px; font-size: 1.1rem; font-weight: bold; cursor: pointer;
+    }
+    .btn-submit svg { width: 28px; height: 28px; flex-shrink: 0; }
+    .btn-submit.awaiting-completion { background: #9ca3af; cursor: not-allowed; }
+    .btn-submit.awaiting-completion svg { opacity: 0.5; }
+    #textoBotaoEnvio { font-size: 1rem; line-height: 1.25; text-align: left; }
+    .btn-Quick {
+      background: #f59e0b; color: #fff; border: none; padding: 8px 12px;
+      border-radius: 6px; font-size: 0.82rem; font-weight: 600; cursor: pointer; margin-bottom: 12px; width: 100%;
+    }
+    .btn-novo {
+      display: block; width: 100%; margin-top: 16px; padding: 14px;
+      border: 1px solid var(--border); background: #fff; color: var(--text);
+      border-radius: 8px; font-weight: 600; font-size: 0.95rem; cursor: pointer;
+    }
+    .btn-novo:hover { background: #f9fafb; }
+    .hidden { display: none; }
+    .field-note {
+      display: block; margin-top: 4px; font-size: 0.78rem; color: #6b7280; font-weight: normal;
+    }
+    .field-note.warn { color: #b45309; }
+    .noscript-warning {
+      background: #fef3c7; border: 1px solid #fbbf24; color: #92400e;
+      padding: 12px; margin: 16px; border-radius: 6px; text-align: center; font-weight: 600;
+    }
+    .registro-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .registro-grid .registro-descricao {
+      grid-column: 1 / -1;
+    }
+    .registro-actions {
+      display: flex;
+      gap: 8px;
+    }
+    .btn-adicionar {
+      width: 100%; min-height: 42px; padding: 10px; border: none; border-radius: 6px;
+      background: var(--accent); color: #fff; font-weight: 700; cursor: pointer;
+    }
+    .lista-registros {
+      display: grid; gap: 8px; margin: 10px 0 14px;
+    }
+    .registro-item {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: center;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px;
+      background: #f9fafb;
+    }
+    .registro-item strong { display: block; overflow-wrap: anywhere; }
+    .registro-item small { color: #6b7280; }
+    .registro-valor { text-align: right; font-weight: 700; white-space: nowrap; }
+    .btn-remover {
+      border: none; background: transparent; color: var(--danger);
+      cursor: pointer; padding: 4px 0 0; font-size: 0.78rem;
+    }
+    .resumo-registros {
+      display: grid; gap: 6px;
+      border-top: 1px solid #eee; padding-top: 10px;
+    }
+    .resumo-registros div {
+      display: flex; justify-content: space-between; gap: 10px;
+    }
+    .resumo-registros .total-geral {
+      margin-top: 4px; padding-top: 8px; border-top: 2px solid var(--primary);
+      font-size: 1.05rem; font-weight: 800;
+    }
+    @media (max-width: 480px) {
+      .mode-switch { gap: 4px; }
+      .mode-btn { font-size: 0.78rem; }
+      .registro-grid { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<noscript>
+  <div class="noscript-warning">
+    ⚠ Este formulário precisa de JavaScript habilitado para funcionar corretamente.
+  </div>
+</noscript>
+
+<header>
+  <img class="header-logo" src="./1777128795714.png" alt="Logo da F5TEC">
+  <h1>F5TEC Assistência Técnica</h1>
+  <p>Check-in de Ordem de Serviço e Checklist</p>
+</header>
+
+<div class="container">
+  <div class="mode-switch" role="group" aria-label="Selecione o modo de preenchimento">
+    <button type="button" class="mode-btn active" id="btnModoCliente" aria-pressed="true" onclick="alternarModo('cliente')">
+      1. Check-in do Cliente
+    </button>
+    <button type="button" class="mode-btn" id="btnModoTecnico" aria-pressed="false" onclick="alternarModo('tecnico')">
+      2. Checklist de Bancada
+    </button>
+    <button type="button" class="mode-btn" id="btnModoOS" aria-pressed="false" onclick="alternarModo('os')">
+      3. Peças e Serviços
+    </button>
+  </div>
+
+  <div id="dialogAcessoProtegido" class="hidden" role="dialog" aria-modal="true" aria-labelledby="tituloAcessoProtegido">
+    <form id="formAcessoProtegido" class="password-dialog">
+      <h2 id="tituloAcessoProtegido">Acesso protegido</h2>
+      <div class="field">
+        <label for="senhaAbas">Digite a senha para acessar a Bancada e Peças/Serviços</label>
+        <input type="password" id="senhaAbas" required autocomplete="current-password">
+      </div>
+      <p id="erroSenhaAbas" class="hidden" role="alert">Senha incorreta.</p>
+      <div class="password-dialog-actions">
+        <button type="button" id="cancelarSenha">Cancelar</button>
+        <button type="submit" id="confirmarSenha">Acessar</button>
+      </div>
+    </form>
+  </div>
+
+  <form id="formOS" novalidate onsubmit="enviarWhatsApp(event)">
+    <div id="validationSummary" class="validation-summary hidden" role="alert" aria-atomic="true">
+      <span id="validationMessage"></span>
+      <button type="button" id="irParaPendencia">Ir para o campo</button>
+    </div>
+
+    <!-- BLOCO 1: TELA ORDEM DE SERVIÇO -->
+    <div class="card" id="blocoDadosOS">
+      <h2>Dados da Ordem de Serviço</h2>
+      <div class="field">
+        <label for="cliente">Cliente (Nome Completo) *</label>
+        <input type="text" id="cliente" required autocomplete="name" placeholder="Ex.: João da Silva">
+      </div>
+      <div class="field">
+        <label for="cpf">CPF</label>
+        <input type="text" id="cpf" inputmode="numeric" autocomplete="off" maxlength="14"
+               pattern="(?:\d{11}|\d{3}\.\d{3}\.\d{3}-\d{2})"
+               title="Informe 11 dígitos, com ou sem pontuação"
+               placeholder="000.000.000-00">
+      </div>
+      <div class="field">
+        <label for="telefone">Telefone / WhatsApp *</label>
+        <input type="tel" id="telefone" required inputmode="tel" autocomplete="tel"
+               pattern="(?:\D*\d){10,13}\D*"
+               title="Informe DDD + número (ex.: (11) 99999-9999)"
+               placeholder="Ex.: (11) 99999-9999">
+      </div>
+      <div class="field">
+        <label for="telefoneAdicional">Telefone / WhatsApp adicional (opcional)</label>
+        <input type="tel" id="telefoneAdicional" inputmode="tel" autocomplete="tel-national"
+               pattern="(?:\D*\d){10,13}\D*"
+               title="Informe DDD + número (ex.: (11) 99999-9999)"
+               placeholder="Ex.: (11) 99999-9999">
+      </div>
+      <div class="grid-2">
+        <div class="field">
+          <label for="marca">Marca *</label>
+          <input type="text" id="marca" required autocomplete="off" placeholder="Ex.: Samsung, Apple">
+        </div>
+        <div class="field">
+          <label for="modelo">Modelo *</label>
+          <input type="text" id="modelo" required autocomplete="off" placeholder="Ex.: Galaxy A52s">
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="field">
+          <label for="cor">Cor *</label>
+          <input type="text" id="cor" required autocomplete="off" placeholder="Ex.: Preto, Branco">
+        </div>
+        <div class="field">
+          <label for="tipo">Tipo *</label>
+          <select id="tipo" required>
+            <option value="" selected disabled>Selecione</option>
+            <option value="Smartphone">Smartphone</option>
+            <option value="Tablet">Tablet</option>
+            <option value="Outro Eletrônico">Outro Eletrônico</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label for="serie">Número de Série / IMEI (Opcional)</label>
+        <input type="text" id="serie" autocomplete="off" placeholder="Digite *#06# no telefone se ele ligar">
+      </div>
+      <div class="field">
+        <label for="possuiAcessorios">Deixou acessórios junto com o aparelho? *</label>
+        <select id="possuiAcessorios" required>
+          <option value="" selected disabled>Selecione uma opção</option>
+          <option value="Sim">Sim</option>
+          <option value="Não">Não</option>
+        </select>
+      </div>
+      <div class="field hidden" id="campoListaAcessorios">
+        <label for="acessorios">Quais acessórios? *</label>
+        <input type="text" id="acessorios" autocomplete="off" placeholder="Ex.: Capa, chip, cartão de memória">
+      </div>
+      <div class="field">
+        <label for="senha">Senha de Desbloqueio (PIN, Texto ou Padrão) *</label>
+        <input type="text" id="senha" required autocomplete="off" placeholder="Digite a senha ou use o desenhador abaixo">
+        <small class="field-note warn">⚠ A senha será incluída na mensagem do WhatsApp enviada para a F5TEC.</small>
+        <div class="pattern-helper">
+          <small>Usa senha de desenho? Toque nos números na ordem do traço:</small>
+          <div class="pattern-grid">
+            <button type="button" class="dot-btn" onclick="addPonto(1, this)">1</button>
+            <button type="button" class="dot-btn" onclick="addPonto(2, this)">2</button>
+            <button type="button" class="dot-btn" onclick="addPonto(3, this)">3</button>
+            <button type="button" class="dot-btn" onclick="addPonto(4, this)">4</button>
+            <button type="button" class="dot-btn" onclick="addPonto(5, this)">5</button>
+            <button type="button" class="dot-btn" onclick="addPonto(6, this)">6</button>
+            <button type="button" class="dot-btn" onclick="addPonto(7, this)">7</button>
+            <button type="button" class="dot-btn" onclick="addPonto(8, this)">8</button>
+            <button type="button" class="dot-btn" onclick="addPonto(9, this)">9</button>
+          </div>
+          <button type="button" class="btn-link" onclick="limparPadrao()">Limpar Desenho</button>
+        </div>
+      </div>
+      <div class="field">
+        <label for="defeito">Defeito / Reclamação Principal *</label>
+        <textarea id="defeito" required minlength="5" autocomplete="off" placeholder="Descreva o que aconteceu com o aparelho..."></textarea>
+      </div>
+      <div class="field">
+        <label for="observacao">Observação Adicional</label>
+        <input type="text" id="observacao" autocomplete="off" placeholder="Algum detalhe estético ou aviso importante?">
+      </div>
+    </div>
+
+    <!-- BLOCO 2: TRIAGEM DO CHECK-IN -->
+    <div class="card" id="blocoTriagem">
+      <h2>Triagem de Entrada (Check-in)</h2>
+      <div id="perguntasTriagem"></div>
+    </div>
+
+    <!-- BLOCO 3: CHECKLIST TÉCNICO DE BANCADA (25 ITENS) -->
+    <div class="card hidden" id="blocoTecnico">
+      <h2>Checklist Técnico de Bancada (Entrada / Saída)</h2>
+      <div class="field">
+        <label for="estagioChecklist">Estágio da Inspeção</label>
+        <select id="estagioChecklist">
+          <option value="ENTRADA">Inspeção de ENTRADA</option>
+          <option value="SAÍDA" disabled>Inspeção de SAÍDA (Entrega)</option>
+        </select>
+      </div>
+      <div class="field" id="fotosEntrada">
+        <label>Fotos da inspeção de ENTRADA * (2 fotos)</label>
+        <div class="grid-2">
+          <div>
+            <label for="fotoEntrada1">Foto 1</label>
+            <input type="file" id="fotoEntrada1" accept="image/*">
+          </div>
+          <div>
+            <label for="fotoEntrada2">Foto 2</label>
+            <input type="file" id="fotoEntrada2" accept="image/*">
+          </div>
+        </div>
+      </div>
+      <div class="field hidden" id="fotosSaida">
+        <label>Fotos do aparelho pronto para inspeção de SAÍDA * (2 fotos)</label>
+        <div class="grid-2">
+          <div>
+            <label for="fotoSaida1">Foto 1</label>
+            <input type="file" id="fotoSaida1" accept="image/*">
+          </div>
+          <div>
+            <label for="fotoSaida2">Foto 2</label>
+            <input type="file" id="fotoSaida2" accept="image/*">
+          </div>
+        </div>
+      </div>
+      <small>As duas fotos da etapa selecionada são obrigatórias. Conclua as fotos e todos os itens do checklist de entrada para liberar a inspeção de saída. Ao trocar de etapa, as marcações do checklist são reiniciadas. Após abrir o WhatsApp, o técnico precisa anexar as fotos manualmente; o link não envia arquivos automaticamente.</small>
+      <div class="field hidden" id="avisoChecklistFotos">
+        Anexe as duas fotos da etapa selecionada para liberar a marcação do checklist.
+      </div>
+      <div class="field">
+        <label for="fotosApp">Fotos Registradas no App?</label>
+        <select id="fotosApp">
+          <option value="Sim (Fotos inseridas na OS)">Sim (Fotos inseridas na OS)</option>
+          <option value="Pendente">Pendente</option>
+        </select>
+      </div>
+      <div id="areaChecklistTecnico" class="hidden">
+        <button type="button" class="btn-Quick" onclick="marcarTodosNaoTestados(); atualizarEstadoEnvio();">
+          Aparelho Não Liga: Marcar todos como "Impossível Testar"
+        </button>
+        <div id="listaHardware"></div>
+      </div>
+    </div>
+
+    <!-- BLOCO 4: PEÇAS E SERVIÇOS DA ORDEM DE SERVIÇO -->
+    <div class="card hidden" id="blocoOS">
+      <h2>Peças e Serviços da Ordem de Serviço</h2>
+      <div class="registro-grid">
+        <div class="field">
+          <label for="categoriaRegistro">Categoria *</label>
+          <select id="categoriaRegistro">
+            <option value="Peça">Peça</option>
+            <option value="Serviço">Serviço</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="quantidadeRegistro">Quantidade *</label>
+          <input type="text" id="quantidadeRegistro" inputmode="numeric" pattern="[0-9]+" value="1" maxlength="6">
+        </div>
+        <div class="field registro-descricao">
+          <label for="descricaoRegistro">Descrição da peça/serviço *</label>
+          <input type="text" id="descricaoRegistro" autocomplete="off" placeholder="Ex.: Troca de tela, diagnóstico técnico">
+        </div>
+        <div class="field">
+          <label for="valorRegistro">Valor unitário *</label>
+          <input type="text" id="valorRegistro" inputmode="decimal" placeholder="0,00" maxlength="12">
+        </div>
+        <div class="field">
+          <label aria-hidden="true">&nbsp;</label>
+          <button type="button" class="btn-adicionar" onclick="adicionarRegistroOS()">Adicionar registro</button>
+        </div>
+      </div>
+
+      <h2>Peças</h2>
+      <div class="lista-registros" id="listaPecas">
+        <small>Nenhuma peça adicionada.</small>
+      </div>
+
+      <h2>Serviços</h2>
+      <div class="lista-registros" id="listaServicos">
+        <small>Nenhum serviço adicionado.</small>
+      </div>
+
+      <div class="resumo-registros">
+        <div><span>Total de peças</span><strong id="totalPecas">R$ 0,00</strong></div>
+        <div><span>Total de serviços</span><strong id="totalServicos">R$ 0,00</strong></div>
+        <div class="total-geral"><span>Total geral</span><strong id="totalGeral">R$ 0,00</strong></div>
+      </div>
+    </div>
+
+    <!-- BLOCO 5: TERMOS DE SERVIÇO E GARANTIA F5TEC -->
+    <div class="card" id="blocoTermos">
+      <h2>Termos de Serviço e Garantia F5TEC</h2>
+      <div class="terms-box">
+        <strong>RESUMO DAS CONDIÇÕES GERAIS (F5TEC):</strong><br><br>
+        <strong>2.1 Pré-Orçamento:</strong> Valores prévios são estimados. Caso o orçamento oficial seja reprovado após diagnóstico físico, será cobrada taxa de avaliação técnica.<br>
+        <strong>2.2 Prazos e Abandono:</strong> Sugere-se a retirada em até 5 dias úteis. Após 30 dias, incide taxa de armazenamento de 10% ao mês. A não retirada em 90 dias configura abandono (Art. 1.263 do Código Civil), autorizando a venda para cobrir custos.<br>
+        <strong>2.3 Dados e Senhas:</strong> A F5TEC não se responsabiliza por perda de dados. O cliente deve fornecer a senha de teste e remover bloqueios.<br>
+        <strong>2.4 Placa Lógica e 2.6 Líquidos:</strong> Reparos em placa lógica possuem risco de parada total ("morte súbita"). Aparelhos molhados podem apresentar falhas progressivas por oxidação sem cobertura.<br>
+        <strong>2.7 Acessórios e 2.9 Comodato:</strong> A loja não se responsabiliza por capas, películas, chips ou cartões deixados. Aparelhos em comodato são de inteira responsabilidade do cliente.<br>
+        <strong>3. Garantia Legal:</strong> 90 dias (Art. 26, II do CDC) exclusivos sobre a peça substituída e o serviço executado. Quedas, trincos, umidade ou violação do selo anulam a garantia. Após aberto, o aparelho perde qualquer certificação original contra água e poeira.<br>
+        <strong>4. Aceite Digital:</strong> O envio deste formulário via WhatsApp constitui ACEITE DIGITAL integral e substitui a assinatura física.
+      </div>
+      <label class="checkbox-row" for="aceiteTermos">
+        <input type="checkbox" id="aceiteTermos" required>
+        <span>Li e concordo integralmente com os Termos de Serviço e Garantia da F5TEC.</span>
+      </label>
+    </div>
+
+    <button type="submit" class="btn-submit">
+      <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+        <path d="M13.601 2.326A7.85 7.85 0 0 0 7.994.004C3.627.004.074 3.557.072 7.924c0 1.393.364 2.75 1.057 3.945L.001 16l4.235-1.11a7.94 7.94 0 0 0 3.8.968h.003c4.367 0 7.92-3.553 7.922-7.92a7.87 7.87 0 0 0-2.36-5.612zM8.04 14.52h-.003a6.6 6.6 0 0 1-3.35-.91l-.24-.144-2.51.658.67-2.448-.156-.252a6.6 6.6 0 0 1-1.01-3.5c0-3.64 2.96-6.6 6.607-6.6a6.56 6.56 0 0 1 4.666 1.935 6.56 6.56 0 0 1 1.93 4.67c-.002 3.64-2.962 6.6-6.603 6.6zm3.62-4.943c-.198-.1-1.17-.577-1.35-.643-.18-.067-.312-.1-.443.1-.132.198-.509.643-.623.775-.115.132-.23.148-.427.05-.198-.1-.835-.308-1.59-.98-.588-.524-.985-1.17-1.1-1.368-.115-.198-.012-.305.086-.403.089-.09.198-.23.297-.345.1-.115.132-.198.198-.33.066-.132.033-.247-.017-.346-.05-.1-.444-1.07-.608-1.466-.16-.385-.323-.333-.444-.339l-.378-.007c-.132 0-.346.05-.526.247-.18.198-.69.675-.69 1.647s.707 1.91.806 2.042c.099.132 1.392 2.125 3.37 2.981.47.203.84.324 1.128.414.474.151.905.13 1.245.079.38-.057 1.17-.478 1.334-.94.165-.462.165-.857.115-.94-.05-.083-.181-.132-.378-.23z"/>
+      </svg>
+      <span id="textoBotaoEnvio" aria-live="polite">Enviar Dados para o WhatsApp da F5TEC</span>
+    </button>
+  </form>
+
+  <button type="button" class="btn-novo" onclick="resetarAtendimento()">
+    🔄 Novo Atendimento (limpar tudo)
+  </button>
+</div>
+
+<script>
+  const NUMERO_CLIENTE = "555197371944"; // Número de destino do modo Cliente (F5TEC)
+  const SENHA_ABAS_PROTEGIDAS = "0101";
+  let modoAtual = "cliente";
+  let abasProtegidasDesbloqueadas = false;
+  let modoProtegidoPendente = null;
+  let sequenciaPadrao = [];
+  let inspecaoEntradaConcluida = false;
+  let checklistEstavaLiberado = false;
+  let validacaoIniciada = false;
+  const marcacaoAutomaticaPorEtapa = { ENTRADA: false, "SAÍDA": false };
+
+  const itensTriagem = [
+    { id: "caiu", label: "Caiu?", opcoes: ["Sim", "Não", "Não sei"] },
+    { id: "molhou", label: "Molhou / Teve contato com líquido?", opcoes: ["Sim", "Não", "Não sei"] },
+    { id: "liga", label: "Liga?", opcoes: ["Sim", "Não", "Reiniciando"] },
+    { id: "travado", label: "Travado?", opcoes: ["Sim", "Não"] },
+    { id: "carrega", label: "Carrega?", opcoes: ["Sim", "Não"] },
+    { id: "assistencia", label: "Já foi pra alguma assistência?", opcoes: ["Sim", "Não"] },
+    { id: "backup", label: "Backup dos dados?", opcoes: ["Sim", "Não"] },
+    { id: "comodato", label: "Precisa de Aparelho Reserva (Comodato)?", opcoes: ["Sim (Sujeito a disponibilidade)", "Não"] }
+  ];
+
+  const itensHardware = [
+    "Aro", "Tampa", "Lentes da câmera", "Tela", "Bateria", "Carregamento", "Auricular", "Campainha Viva-voz",
+    "Microfone 1", "Microfone 2", "Conector Fone", "Connector USB",
+    "Câmera frontal", "Câmera traseira", "Flash", "Wifi Bluetooth GPS",
+    "Rede móvel", "Chip e cartão de memória", "Botão +", "Botão -",
+    "Botão Power", "Botão Biometria", "Botão Assistente", "Vibracall", "Aproximação"
+  ];
+
+  let registrosOS = [];
+  let proximoRegistroId = 1;
+
+  function formatarMoeda(valor) {
+    return valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  }
+
+  function calcularTotaisCategoria(categoria) {
+    return registrosOS
+      .filter(registro => registro.categoria === categoria)
+      .reduce((total, registro) => total + (registro.quantidade * registro.valor), 0);
+  }
+
+  function criarItemRegistro(registro) {
+    const item = document.createElement("div");
+    item.className = "registro-item";
+
+    const detalhes = document.createElement("div");
+    const descricao = document.createElement("strong");
+    descricao.textContent = registro.descricao;
+    const quantidade = document.createElement("small");
+    quantidade.textContent = `Quantidade: ${registro.quantidade} × ${formatarMoeda(registro.valor)}`;
+    detalhes.appendChild(descricao);
+    detalhes.appendChild(document.createElement("br"));
+    detalhes.appendChild(quantidade);
+
+    const direita = document.createElement("div");
+    direita.style.textAlign = "right";
+    const total = document.createElement("div");
+    total.className = "registro-valor";
+    total.textContent = formatarMoeda(registro.quantidade * registro.valor);
+    const remover = document.createElement("button");
+    remover.type = "button";
+    remover.className = "btn-remover";
+    remover.textContent = "Remover";
+    remover.onclick = () => removerRegistroOS(registro.id);
+    direita.appendChild(total);
+    direita.appendChild(remover);
+
+    item.appendChild(detalhes);
+    item.appendChild(direita);
+    return item;
+  }
+
+  function renderizarRegistrosOS() {
+    ["Peça", "Serviço"].forEach(categoria => {
+      const container = document.getElementById(categoria === "Peça" ? "listaPecas" : "listaServicos");
+      container.replaceChildren();
+      const registrosCategoria = registrosOS.filter(registro => registro.categoria === categoria);
+
+      if (registrosCategoria.length === 0) {
+        const vazio = document.createElement("small");
+        vazio.textContent = categoria === "Peça"
+          ? "Nenhuma peça adicionada."
+          : "Nenhum serviço adicionado.";
+        container.appendChild(vazio);
+        return;
+      }
+
+      registrosCategoria.forEach(registro => container.appendChild(criarItemRegistro(registro)));
+    });
+
+    const totalPecas = calcularTotaisCategoria("Peça");
+    const totalServicos = calcularTotaisCategoria("Serviço");
+    document.getElementById("totalPecas").textContent = formatarMoeda(totalPecas);
+    document.getElementById("totalServicos").textContent = formatarMoeda(totalServicos);
+    document.getElementById("totalGeral").textContent = formatarMoeda(totalPecas + totalServicos);
+  }
+
+  function adicionarRegistroOS() {
+    const categoria = document.getElementById("categoriaRegistro").value;
+    const descricao = document.getElementById("descricaoRegistro").value.trim();
+    // Quantidade: aceita apenas dígitos (input type=text + inputmode=numeric)
+    const quantidade = Number(document.getElementById("quantidadeRegistro").value.trim());
+    // Valor: aceita vírgula (padrão BR) e converte para ponto
+    const valorRaw = document.getElementById("valorRegistro").value.trim().replace(",", ".");
+    const valor = Number(valorRaw);
+
+    if (!descricao) {
+      document.getElementById("descricaoRegistro").focus();
+      alert("Informe a descrição da peça ou do serviço.");
+      return;
+    }
+    if (!Number.isInteger(quantidade) || quantidade < 1) {
+      document.getElementById("quantidadeRegistro").focus();
+      alert("Informe uma quantidade inteira maior que zero.");
+      return;
+    }
+    if (!Number.isFinite(valor) || valor < 0) {
+      document.getElementById("valorRegistro").focus();
+      alert("Informe um valor válido (ex.: 10,50 ou 10.50).");
+      return;
+    }
+
+    registrosOS.push({
+      id: proximoRegistroId++,
+      categoria,
+      descricao,
+      quantidade,
+      valor
+    });
+
+    document.getElementById("descricaoRegistro").value = "";
+    document.getElementById("quantidadeRegistro").value = "1";
+    document.getElementById("valorRegistro").value = "";
+    document.getElementById("descricaoRegistro").focus();
+    renderizarRegistrosOS();
+  }
+
+  function removerRegistroOS(id) {
+    registrosOS = registrosOS.filter(registro => registro.id !== id);
+    renderizarRegistrosOS();
+  }
+
+  function gerarResumoRegistrosOS() {
+    if (registrosOS.length === 0) {
+      return "*5. PEÇAS E SERVIÇOS*\n• Nenhum registro cadastrado.";
+    }
+
+    let resumo = "*5. PEÇAS E SERVIÇOS*\n";
+    ["Peça", "Serviço"].forEach(categoria => {
+      const registros = registrosOS.filter(registro => registro.categoria === categoria);
+      resumo += `\n*${categoria === "Peça" ? "Peças" : "Serviços"}*\n`;
+      if (registros.length === 0) {
+        resumo += "• Nenhum registro\n";
+      } else {
+        registros.forEach(registro => {
+          resumo += `• ${registro.descricao}: ${registro.quantidade} × ${formatarMoeda(registro.valor)} = ${formatarMoeda(registro.quantidade * registro.valor)}\n`;
+        });
+      }
+    });
+
+    const totalPecas = calcularTotaisCategoria("Peça");
+    const totalServicos = calcularTotaisCategoria("Serviço");
+    resumo += `\n• Total de peças: ${formatarMoeda(totalPecas)}\n`;
+    resumo += `• Total de serviços: ${formatarMoeda(totalServicos)}\n`;
+    resumo += `• *Total geral: ${formatarMoeda(totalPecas + totalServicos)}*`;
+    return resumo;
+  }
+
+  function criarGrupoOpcoes(containerId, lista, opcoesPadrao) {
+    const container = document.getElementById(containerId);
+    lista.forEach((item, idx) => {
+      const nome = typeof item === "string" ? item : item.label;
+      const chave = typeof item === "string" ? "hw_" + idx : item.id;
+      const opcoes = typeof item === "string" ? opcoesPadrao : item.opcoes;
+
+      const fieldset = document.createElement("fieldset");
+      fieldset.className = "field";
+
+      const legend = document.createElement("legend");
+      legend.textContent = nome;
+      fieldset.appendChild(legend);
+
+      const grp = document.createElement("div");
+      grp.className = "radio-group";
+      grp.id = "grp_" + chave;
+      fieldset.appendChild(grp);
+      container.appendChild(fieldset);
+
+      opcoes.forEach(op => {
+        const pill = document.createElement("label");
+        pill.className = "radio-pill";
+        if (op === "Sim" || op.startsWith("Sim ") || op === "OK") {
+          pill.classList.add("option-positive");
+        } else if (op === "Não" || op === "Defeito") {
+          pill.classList.add("option-negative");
+        } else if (["Não sei", "Não precisa", "Não Testado", "Reiniciando"].includes(op)) {
+          pill.classList.add("option-indecisive");
+        }
+        const input = document.createElement("input");
+        input.type = "radio";
+        input.name = chave;
+        input.value = op;
+        pill.appendChild(input);
+        pill.appendChild(document.createTextNode(op));
+        grp.appendChild(pill);
+      });
+    });
+  }
+
+  criarGrupoOpcoes("perguntasTriagem", itensTriagem, []);
+  criarGrupoOpcoes("listaHardware", itensHardware, ["OK", "Defeito", "Não Testado"]);
+
+  function atualizarCampoAcessorios() {
+    const possuiAcessorios = document.getElementById("possuiAcessorios").value === "Sim";
+    const campoLista = document.getElementById("campoListaAcessorios");
+    const descricao = document.getElementById("acessorios");
+
+    campoLista.classList.toggle("hidden", !possuiAcessorios);
+    descricao.required = possuiAcessorios;
+    if (!possuiAcessorios) {
+      descricao.value = "";
+    }
+  }
+
+  function atualizarIndicadoresPendencia(mostrarPendencias) {
+    const pendencias = [];
+    const areaChecklistOculta = document.getElementById("areaChecklistTecnico").classList.contains("hidden");
+    const seletorCampos = modoAtual === "os"
+      ? "#blocoDadosOS .field, #blocoOS .field"
+      : "#formOS .field, #formOS .checkbox-row";
+
+    document.querySelectorAll(seletorCampos).forEach(campo => {
+      if (campo.closest("#listaHardware") && areaChecklistOculta) {
+        campo.classList.remove("has-pending");
+        return;
+      }
+
+      let pendente = false;
+
+      // Radios (grupos de triagem e hardware)
+      const radios = campo.querySelectorAll('input[type="radio"]');
+      if (radios.length) {
+        const semSelecao = !campo.querySelector('input[type="radio"]:checked');
+        if (semSelecao) pendente = true;
+        radios.forEach(r => {
+          if (mostrarPendencias && semSelecao) {
+            r.setAttribute("aria-invalid", "true");
+          } else {
+            r.removeAttribute("aria-invalid");
+          }
+        });
+      }
+
+      // Controles não-radio
+      campo.querySelectorAll('input:not([type="radio"]), select, textarea').forEach(controle => {
+        if (controle.willValidate) {
+          const invalido = !controle.checkValidity();
+          if (invalido) pendente = true;
+          if (mostrarPendencias && invalido) {
+            controle.setAttribute("aria-invalid", "true");
+          } else {
+            controle.removeAttribute("aria-invalid");
+          }
+        }
+      });
+
+      campo.classList.toggle("has-pending", mostrarPendencias && pendente);
+      if (pendente) {
+        const label = campo.querySelector("label, legend");
+        const nome = label ? label.textContent.trim().replace(/\s+/g, " ") : "Campo obrigatório";
+        pendencias.push({ campo, nome });
+      }
+    });
+
+    const resumo = document.getElementById("validationSummary");
+    resumo.classList.toggle("hidden", !mostrarPendencias || pendencias.length === 0);
+    if (mostrarPendencias && pendencias.length > 0) {
+      document.getElementById("validationMessage").textContent =
+        `⚠ Faltam ${pendencias.length} item(ns). Próximo: ${pendencias[0].nome}`;
+    }
+
+    return pendencias;
+  }
+
+  function irParaPrimeiraPendencia() {
+    const primeiroCampo = Array.from(document.querySelectorAll("#formOS .has-pending"))
+      .find(campo => campo.getClientRects().length > 0);
+    if (primeiroCampo) {
+      primeiroCampo.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }
+
+  function calcularEntradaConcluida() {
+    const fotos = ["fotoEntrada1", "fotoEntrada2"].every(id =>
+      document.getElementById(id).files.length > 0
+    );
+    const checklist = itensHardware.every((_, i) =>
+      document.querySelector(`input[name="hw_${i}"]:checked`)
+    );
+    return fotos && checklist;
+  }
+
+  function atualizarEstadoEnvio() {
+    const estagio = document.getElementById("estagioChecklist").value;
+
+    document.getElementById("fotosEntrada").classList.toggle("hidden", estagio !== "ENTRADA");
+    document.getElementById("fotosSaida").classList.toggle("hidden", estagio !== "SAÍDA");
+    document.getElementById("avisoChecklistFotos").textContent = estagio === "ENTRADA"
+      ? "Anexe as duas fotos do aparelho na entrada para liberar a marcação do checklist."
+      : "Anexe as duas fotos do aparelho pronto para liberar a marcação do checklist de saída.";
+
+    const fotosEtapaCompletas = (estagio === "ENTRADA"
+      ? ["fotoEntrada1", "fotoEntrada2"]
+      : ["fotoSaida1", "fotoSaida2"]
+    ).every(id => document.getElementById(id).files.length > 0);
+
+    const checklistLiberado = modoAtual === "tecnico" && fotosEtapaCompletas;
+    const checklistFoiLiberado = checklistLiberado && !checklistEstavaLiberado;
+    checklistEstavaLiberado = checklistLiberado;
+
+    document.getElementById("areaChecklistTecnico").classList.toggle("hidden", !checklistLiberado);
+    document.getElementById("avisoChecklistFotos").classList.toggle("hidden", modoAtual !== "tecnico" || fotosEtapaCompletas);
+
+    const fotosEntradaObrigatorias = modoAtual === "tecnico" && estagio === "ENTRADA";
+    const fotosSaidaObrigatorias = modoAtual === "tecnico" && estagio === "SAÍDA";
+    ["fotoEntrada1", "fotoEntrada2"].forEach(id => {
+      document.getElementById(id).required = fotosEntradaObrigatorias;
+    });
+    ["fotoSaida1", "fotoSaida2"].forEach(id => {
+      document.getElementById(id).required = fotosSaidaObrigatorias;
+    });
+
+    // Auto-marcação apenas UMA VEZ por etapa (não sobrescreve alterações manuais)
+    if (checklistLiberado && obterValorRadio("liga") === "Não" && !marcacaoAutomaticaPorEtapa[estagio]) {
+      marcacaoAutomaticaPorEtapa[estagio] = true;
+      marcarTodosNaoTestados();
+    }
+
+    const triagemCompleta = itensTriagem.every(item =>
+      document.querySelector(`input[name="${item.id}"]:checked`)
+    );
+    const bancadaCompleta = modoAtual !== "tecnico" || itensHardware.every((_, idx) =>
+      document.querySelector(`input[name="hw_${idx}"]:checked`)
+    );
+
+    if (modoAtual === "tecnico" && estagio === "ENTRADA") {
+      inspecaoEntradaConcluida = calcularEntradaConcluida();
+    }
+    document.querySelector('#estagioChecklist option[value="SAÍDA"]').disabled = !inspecaoEntradaConcluida;
+
+    const pendencias = atualizarIndicadoresPendencia(validacaoIniciada);
+    const prontoParaEnviar = modoAtual === "os"
+      ? pendencias.length === 0
+      : document.getElementById("formOS").checkValidity()
+        && triagemCompleta
+        && bancadaCompleta
+        && pendencias.length === 0;
+
+    const botaoEnvio = document.querySelector(".btn-submit");
+    botaoEnvio.classList.toggle("awaiting-completion", !prontoParaEnviar);
+    const nomeClienteParaBotao = document.getElementById("cliente").value.trim() || "Cliente";
+    document.getElementById("textoBotaoEnvio").textContent = prontoParaEnviar
+      ? (modoAtual === "tecnico"
+        ? `Enviar Checklist de ${nomeClienteParaBotao} pelo WhatsApp`
+        : modoAtual === "os"
+          ? `Enviar Peças e Serviços de ${nomeClienteParaBotao} pelo WhatsApp`
+          : "Enviar Dados para o WhatsApp da F5TEC")
+      : (modoAtual === "tecnico"
+        ? `Verificar preenchimento do Checklist de ${nomeClienteParaBotao}`
+        : modoAtual === "os"
+          ? `Verificar dados de Peças e Serviços de ${nomeClienteParaBotao}`
+          : "Verificar preenchimento para enviar");
+
+    if (checklistFoiLiberado) {
+      irParaPrimeiraPendencia();
+    }
+    return prontoParaEnviar;
+  }
+
+  const formularioOS = document.getElementById("formOS");
+  formularioOS.addEventListener("input", atualizarEstadoEnvio);
+  formularioOS.addEventListener("change", atualizarEstadoEnvio);
+  document.getElementById("irParaPendencia").addEventListener("click", irParaPrimeiraPendencia);
+  document.getElementById("possuiAcessorios").addEventListener("change", atualizarCampoAcessorios);
+
+  const formularioAcessoProtegido = document.getElementById("formAcessoProtegido");
+  formularioAcessoProtegido.addEventListener("submit", event => {
+    event.preventDefault();
+    const senha = document.getElementById("senhaAbas");
+    const erro = document.getElementById("erroSenhaAbas");
+    if (senha.value !== SENHA_ABAS_PROTEGIDAS) {
+      erro.classList.remove("hidden");
+      senha.select();
+      return;
+    }
+
+    const modo = modoProtegidoPendente;
+    modoProtegidoPendente = null;
+    formularioAcessoProtegido.reset();
+    document.getElementById("dialogAcessoProtegido").classList.add("hidden");
+    erro.classList.add("hidden");
+    if (modo) {
+      alternarModo(modo, true);
+    }
+  });
+
+  document.getElementById("cancelarSenha").addEventListener("click", () => {
+    modoProtegidoPendente = null;
+    formularioAcessoProtegido.reset();
+    document.getElementById("dialogAcessoProtegido").classList.add("hidden");
+    document.getElementById("erroSenhaAbas").classList.add("hidden");
+  });
+
+  const seletorEstagio = document.getElementById("estagioChecklist");
+  let estagioAnterior = seletorEstagio.value;
+  seletorEstagio.addEventListener("change", () => {
+    validacaoIniciada = true;
+    if (estagioAnterior === "ENTRADA" && seletorEstagio.value === "SAÍDA" && !inspecaoEntradaConcluida) {
+      alert("Conclua as duas fotos e todos os itens do checklist de entrada antes de avançar para a inspeção de saída.");
+      seletorEstagio.value = estagioAnterior;
+      atualizarEstadoEnvio();
+      irParaPrimeiraPendencia();
+      return;
+    }
+
+    if (estagioAnterior !== seletorEstagio.value) {
+      document.querySelectorAll("#listaHardware input[type='radio']").forEach(input => {
+        input.checked = false;
+      });
+      marcacaoAutomaticaPorEtapa[seletorEstagio.value] = false;
+    }
+
+    estagioAnterior = seletorEstagio.value;
+    atualizarEstadoEnvio();
+    irParaPrimeiraPendencia();
+  });
+
+  function alternarModo(modo, senhaValidada) {
+    if (["tecnico", "os"].includes(modo) && !abasProtegidasDesbloqueadas && !senhaValidada) {
+      modoProtegidoPendente = modo;
+      document.getElementById("senhaAbas").value = "";
+      document.getElementById("erroSenhaAbas").classList.add("hidden");
+      document.getElementById("dialogAcessoProtegido").classList.remove("hidden");
+      document.getElementById("senhaAbas").focus();
+      return;
+    }
+
+    if (senhaValidada) {
+      abasProtegidasDesbloqueadas = true;
+    }
+    if (modo === "cliente") {
+      abasProtegidasDesbloqueadas = false;
+    }
+    if (modo === "tecnico" || modo === "os") {
+      validacaoIniciada = true;
+    }
+
+    modoAtual = modo;
+
+    // [Item 9] Recalcular status da entrada ao entrar no modo técnico (garante SAÍDA bloqueada se entrada inválida)
+    if (modo === "tecnico" && document.getElementById("estagioChecklist").value === "ENTRADA") {
+      inspecaoEntradaConcluida = calcularEntradaConcluida();
+    }
+
+    const btnCliente = document.getElementById("btnModoCliente");
+    const btnTecnico = document.getElementById("btnModoTecnico");
+    const btnOS = document.getElementById("btnModoOS");
+    btnCliente.classList.toggle("active", modo === "cliente");
+    btnTecnico.classList.toggle("active", modo === "tecnico");
+    btnOS.classList.toggle("active", modo === "os");
+    btnCliente.setAttribute("aria-pressed", modo === "cliente" ? "true" : "false");
+    btnTecnico.setAttribute("aria-pressed", modo === "tecnico" ? "true" : "false");
+    btnOS.setAttribute("aria-pressed", modo === "os" ? "true" : "false");
+    document.getElementById("blocoTecnico").classList.toggle("hidden", modo !== "tecnico");
+    document.getElementById("blocoOS").classList.toggle("hidden", modo !== "os");
+    document.getElementById("blocoTriagem").classList.toggle("hidden", modo === "os");
+    document.getElementById("blocoTermos").classList.toggle("hidden", modo === "os");
+
+    atualizarEstadoEnvio();
+    if (modo === "tecnico" || modo === "os") {
+      irParaPrimeiraPendencia();
+    }
+  }
+
+  function addPonto(num, btn) {
+    if (!sequenciaPadrao.includes(num)) {
+      sequenciaPadrao.push(num);
+      btn.classList.add("selected");
+      document.getElementById("senha").value = "Padrão: " + sequenciaPadrao.join(" -> ");
+    }
+  }
+
+  function limparPadrao() {
+    sequenciaPadrao = [];
+    document.querySelectorAll(".dot-btn").forEach(b => b.classList.remove("selected"));
+    document.getElementById("senha").value = "";
+  }
+
+  function marcarTodosNaoTestados() {
+    itensHardware.forEach((item, idx) => {
+      if (["Aro", "Tampa", "Lentes da câmera"].includes(item)) return;
+      const grp = document.getElementById("grp_hw_" + idx);
+      const alvo = grp.querySelector('input[value="Não Testado"]');
+      if (alvo) alvo.checked = true;
+    });
+    // Não chama mais atualizarEstadoEnvio (evita recursão — o chamador atualiza)
+  }
+
+  function obterValorRadio(nome) {
+    const el = document.querySelector(`input[name="${nome}"]:checked`);
+    return el ? el.value : "Não informado";
+  }
+
+  function abrirWhatsApp(url) {
+    const a = document.createElement("a");
+    a.href = url;
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
+    a.style.display = "none";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+
+  function enviarWhatsApp(e) {
+    e.preventDefault();
+    validacaoIniciada = true;
+    if (!atualizarEstadoEnvio()) {
+      irParaPrimeiraPendencia();
+      return;
+    }
+
+    const dataAtual = new Date().toLocaleDateString("pt-BR");
+    let msg;
+    let numeroDestino = NUMERO_CLIENTE;
+
+    if (modoAtual === "tecnico") {
+      const telefoneCliente = document.getElementById("telefone").value.replace(/\D/g, "");
+      const telefoneComCodigoPais = telefoneCliente.length === 10 || telefoneCliente.length === 11
+        ? `55${telefoneCliente}`
+        : telefoneCliente;
+      // [Item 6] Feedback claro quando telefone é inválido
+      if (!/^55\d{10,11}$/.test(telefoneComCodigoPais)) {
+        alert("Telefone do cliente inválido. Verifique DDD + número antes de enviar.");
+        document.getElementById("telefone").focus();
+        return;
+      }
+
+      numeroDestino = telefoneComCodigoPais;
+      msg = `*F5TEC - CONFERÊNCIA DO CHECKLIST*\n`;
+      msg += `Olá, ${document.getElementById("cliente").value}! Confira o checklist técnico do seu aparelho:\n\n`;
+      msg += `• Marca: ${document.getElementById("marca").value}\n`;
+      msg += `• Modelo: ${document.getElementById("modelo").value}\n`;
+      msg += `• Estágio da inspeção: ${document.getElementById("estagioChecklist").value}\n`;
+      msg += `• Fotos registradas no app: ${document.getElementById("fotosApp").value}\n\n`;
+      itensHardware.forEach((nome, idx) => {
+        msg += `• ${nome}: *${obterValorRadio("hw_" + idx)}*\n`;
+      });
+      msg += `\nPor favor, confira as informações e responda a esta mensagem caso tenha alguma observação.`;
+    } else if (modoAtual === "os") {
+      msg = `*F5TEC - PEÇAS E SERVIÇOS DA ORDEM DE SERVIÇO*\n`;
+      msg += `Data: ${dataAtual}\n\n`;
+      msg += `• Cliente: ${document.getElementById("cliente").value}\n`;
+      msg += `• Telefone/WhatsApp: ${document.getElementById("telefone").value}\n`;
+      msg += `• Marca: ${document.getElementById("marca").value}\n`;
+      msg += `• Modelo: ${document.getElementById("modelo").value}\n\n`;
+      msg += `${gerarResumoRegistrosOS()}\n`;
+    } else {
+      msg = `*F5TEC - CHECK-IN DE ORDEM DE SERVIÇO*\n`;
+      msg += `Data Entrada: ${dataAtual}\n\n`;
+
+      msg += `*1. DADOS DA O.S. (TELA PRINCIPAL)*\n`;
+      msg += `• Cliente: ${document.getElementById("cliente").value}\n`;
+      msg += `• CPF: ${document.getElementById("cpf").value || "Não informado"}\n`;
+      msg += `• Telefone/WhatsApp: ${document.getElementById("telefone").value}\n`;
+      msg += `• Telefone/WhatsApp adicional: ${document.getElementById("telefoneAdicional").value || "Não informado"}\n`;
+      msg += `• Marca: ${document.getElementById("marca").value}\n`;
+      msg += `• Modelo: ${document.getElementById("modelo").value}\n`;
+      msg += `• Cor: ${document.getElementById("cor").value}\n`;
+      msg += `• Nº Série/IMEI: ${document.getElementById("serie").value || "N/I"}\n`;
+      msg += `• Tipo: ${document.getElementById("tipo").value}\n`;
+      const possuiAcessorios = document.getElementById("possuiAcessorios").value;
+      const descricaoAcessorios = possuiAcessorios === "Sim"
+        ? `Sim: ${document.getElementById("acessorios").value}`
+        : "Não";
+      msg += `• Acessórios: ${descricaoAcessorios}\n`;
+      msg += `• Observação: ${document.getElementById("observacao").value || "Nenhuma"}\n`;
+      msg += `• Senha: ${document.getElementById("senha").value}\n`;
+      msg += `• Defeito/Reclamação: ${document.getElementById("defeito").value}\n\n`;
+
+      msg += `*2. CHECK-IN (HISTÓRICO DE ENTRADA)*\n`;
+      itensTriagem.forEach(item => {
+        msg += `• ${item.label} *${obterValorRadio(item.id)}*\n`;
+      });
+
+      msg += `\n*4. ACEITE LEGAL DIGITAL*\n`;
+      msg += `• Confirmado: Li e aceito os Termos de Serviço e Garantia F5TEC (Cláusula 4.1).`;
+    }
+
+    const url = `https://wa.me/${numeroDestino}?text=${encodeURIComponent(msg)}`;
+    abrirWhatsApp(url);
+  }
+
+  function resetarAtendimento() {
+    if (!confirm("Limpar todos os dados do atendimento atual? Esta ação não pode ser desfeita.")) return;
+
+    formularioOS.reset();
+
+    // Registros de peças/serviços
+    registrosOS = [];
+    proximoRegistroId = 1;
+    renderizarRegistrosOS();
+
+    // Desenho de padrão
+    sequenciaPadrao = [];
+    document.querySelectorAll(".dot-btn").forEach(b => b.classList.remove("selected"));
+
+    // Garantir que todos os radios sejam desmarcados (reset pode não limpar se algum foi marcado via JS)
+    document.querySelectorAll('#formOS input[type="radio"]').forEach(input => {
+      input.checked = false;
+    });
+
+    // Flags de estado
+    inspecaoEntradaConcluida = false;
+    checklistEstavaLiberado = false;
+    validacaoIniciada = false;
+    marcacaoAutomaticaPorEtapa.ENTRADA = false;
+    marcacaoAutomaticaPorEtapa["SAÍDA"] = false;
+
+    // Estágio
+    seletorEstagio.value = "ENTRADA";
+    estagioAnterior = "ENTRADA";
+
+    // Volta ao modo cliente
+    alternarModo("cliente");
+
+    // Atualizações finais
+    atualizarCampoAcessorios();
+    atualizarEstadoEnvio();
+
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  atualizarCampoAcessorios();
+  atualizarEstadoEnvio();
+  renderizarRegistrosOS();
+</script>
+</body>
+</html>
