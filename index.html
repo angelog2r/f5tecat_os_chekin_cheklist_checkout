@@ -101,9 +101,21 @@
     }
     fieldset.field > legend { margin-bottom: 5px; width: 100%; }
     .terms-box {
-      max-height: 190px; overflow-y: auto; background: #f9fafb; border: 1px solid var(--border);
-      padding: 12px; border-radius: 6px; font-size: 0.8rem; line-height: 1.45; color: #374151; margin-bottom: 12px;
+      max-height: 450px; 
+      overflow-y: auto; 
+      background: #f9fafb; 
+      border: 1px solid var(--border);
+      padding: 16px; 
+      border-radius: 6px; 
+      font-size: 0.82rem; 
+      line-height: 1.5; 
+      color: #374151; 
+      margin-bottom: 12px;
+      text-align: justify;
     }
+    .terms-box strong { color: #111827; }
+    .terms-box ul { margin-top: 5px; margin-bottom: 10px; padding-left: 20px; }
+    .terms-box li { margin-bottom: 4px; }
     .checkbox-row { display: flex; align-items: flex-start; gap: 10px; font-size: 0.88rem; font-weight: 600; }
     .checkbox-row input { width: 18px; height: 18px; margin-top: 2px; flex-shrink: 0; }
     .field.has-pending > label,
@@ -162,10 +174,6 @@
     }
     .registro-grid .registro-descricao {
       grid-column: 1 / -1;
-    }
-    .registro-actions {
-      display: flex;
-      gap: 8px;
     }
     .btn-adicionar {
       width: 100%; min-height: 42px; padding: 10px; border: none; border-radius: 6px;
@@ -398,7 +406,7 @@
           </div>
         </div>
       </div>
-      <small>As duas fotos da etapa selecionada são obrigatórias. Conclua as fotos e todos os itens do checklist de entrada para liberar a inspeção de saída. Ao trocar de etapa, as marcações do checklist são reiniciadas. Após abrir o WhatsApp, o técnico precisa anexar as fotos manualmente; o link não envia arquivos automaticamente.</small>
+      <small>As duas fotos da etapa selecionada são obrigatórias. Conclua as fotos e todos os itens do checklist de entrada para liberar a inspeção de saída. Ao trocar de etapa, as marcações do checklist são reiniciadas. <strong>As fotos da etapa selecionada serão compartilhadas junto com a mensagem pelo próprio celular (Android/iOS).</strong> Se o navegador não permitir o envio automático, o WhatsApp será aberto com o texto e você anexa as fotos manualmente.</small>
       <div class="field hidden" id="avisoChecklistFotos">
         Anexe as duas fotos da etapa selecionada para liberar a marcação do checklist.
       </div>
@@ -461,20 +469,84 @@
         <div><span>Total de serviços</span><strong id="totalServicos">R$ 0,00</strong></div>
         <div class="total-geral"><span>Total geral</span><strong id="totalGeral">R$ 0,00</strong></div>
       </div>
+
+      <!-- FORMA DE PAGAMENTO -->
+      <h2 style="margin-top:18px;">Forma de Pagamento</h2>
+      <div class="registro-grid">
+        <div class="field">
+          <label for="formaPagamento">Forma de pagamento *</label>
+          <select id="formaPagamento" required>
+            <option value="" selected disabled>Selecione</option>
+            <option value="Dinheiro">Dinheiro</option>
+            <option value="PIX">PIX</option>
+            <option value="Cartão de Crédito">Cartão de Crédito</option>
+          </select>
+        </div>
+        <div class="field hidden" id="campoParcelas">
+          <label for="parcelasCartao">Parcelas *</label>
+          <select id="parcelasCartao"></select>
+        </div>
+        <div class="field registro-descricao hidden" id="campoTaxaCartao">
+          <label for="taxaCartao">Taxa total da maquininha (%) *</label>
+          <input type="text" id="taxaCartao" inputmode="decimal" placeholder="Ex.: 12,5" maxlength="6">
+          <small class="field-note">Taxa calculada automaticamente com base nas parcelas. Pode ser ajustada se necessário.</small>
+        </div>
+      </div>
+
+      <div class="resumo-registros">
+        <div><span>Forma de pagamento</span><strong id="resumoFormaPagamento">—</strong></div>
+        <div id="linhaParcelas" class="hidden"><span>Parcelas</span><strong id="resumoParcelas">—</strong></div>
+        <div id="linhaAcrescimo" class="hidden"><span>Acréscimo da maquininha</span><strong id="resumoAcrescimo">R$ 0,00</strong></div>
+        <div class="total-geral"><span>Total a pagar</span><strong id="totalComPagamento">R$ 0,00</strong></div>
+      </div>
     </div>
 
     <!-- BLOCO 5: TERMOS DE SERVIÇO E GARANTIA F5TEC -->
     <div class="card" id="blocoTermos">
       <h2>Termos de Serviço e Garantia F5TEC</h2>
       <div class="terms-box">
-        <strong>RESUMO DAS CONDIÇÕES GERAIS (F5TEC):</strong><br><br>
-        <strong>2.1 Pré-Orçamento:</strong> Valores prévios são estimados. Caso o orçamento oficial seja reprovado após diagnóstico físico, será cobrada taxa de avaliação técnica.<br>
-        <strong>2.2 Prazos e Abandono:</strong> Sugere-se a retirada em até 5 dias úteis. Após 30 dias, incide taxa de armazenamento de 10% ao mês. A não retirada em 90 dias configura abandono (Art. 1.263 do Código Civil), autorizando a venda para cobrir custos.<br>
-        <strong>2.3 Dados e Senhas:</strong> A F5TEC não se responsabiliza por perda de dados. O cliente deve fornecer a senha de teste e remover bloqueios.<br>
-        <strong>2.4 Placa Lógica e 2.6 Líquidos:</strong> Reparos em placa lógica possuem risco de parada total ("morte súbita"). Aparelhos molhados podem apresentar falhas progressivas por oxidação sem cobertura.<br>
-        <strong>2.7 Acessórios e 2.9 Comodato:</strong> A loja não se responsabiliza por capas, películas, chips ou cartões deixados. Aparelhos em comodato são de inteira responsabilidade do cliente.<br>
-        <strong>3. Garantia Legal:</strong> 90 dias (Art. 26, II do CDC) exclusivos sobre a peça substituída e o serviço executado. Quedas, trincos, umidade ou violação do selo anulam a garantia. Após aberto, o aparelho perde qualquer certificação original contra água e poeira.<br>
-        <strong>4. Aceite Digital:</strong> O envio deste formulário via WhatsApp constitui ACEITE DIGITAL integral e substitui a assinatura física.
+        <div style="text-align: center; font-size: 0.9rem; font-weight: bold; margin-bottom: 15px;">
+          ⚖️ TERMOS DE SERVIÇO E GARANTIA - F5TEC Assistência Técnica & Atualização Tecnológica ⚖️
+        </div>
+        
+        <p>Pedimos que leia com atenção nossas políticas de atendimento:</p>
+
+        <strong>📝 2 CONDIÇÕES GERAIS DE SERVIÇO</strong><br><br>
+        <strong>🔎 2.1 Pré-Orçamento e Avaliação Técnica:</strong> Qualquer valor informado antes da análise física do aparelho é considerado pré-orçamento estimado, podendo variar conforme o diagnóstico técnico real. O orçamento oficial somente será emitido após a abertura e análise completa do dispositivo pelo técnico responsável. Caso o cliente não aprove o orçamento após essa avaliação, será cobrada a taxa de diagnóstico, referente ao tempo e mão de obra utilizados no processo.<br><br>
+        <strong>⏳ 2.2 Prazos, Retirada e Abandono:</strong> O aparelho deve ser retirado no prazo sugerido de 5 (cinco) dias úteis após a conclusão. O cliente se compromete a retirar o aparelho em até 30 (trinta) dias; passado esse prazo, poderá ser cobrado um acréscimo de 10% ao mês pelo armazenamento. Atenção: a não retirada do aparelho no prazo de 90 dias implicará na venda do mesmo para pagamento de custos, configurando abandono de acordo com o Código Civil (Art. 1.263).<br><br>
+        <strong>🔐 2.3 Dados, Privacidade e Senhas:</strong> A F5TEC não se responsabiliza por perda de dados, fotos, contatos ou aplicativos armazenados; o cliente está ciente de que serviços de formatação (reset) e atualização implicam na perda de todos os dados pessoais. O cliente deve desativar bloqueios (iCloud/Google) e fornecer o PIN para testes. Caso o bloqueio inviabilize o serviço, a taxa de diagnóstico não será reembolsada.<br><br>
+        <strong>⚠️ 2.4 Reparos em Placa Lógica:</strong> Em caso de reparos em placa lógica (conectores, botões, componentes fixos na placa), o cliente está ciente de que o procedimento pode implicar na "morte súbita" do aparelho, inutilizando-o completamente.<br><br>
+        <strong>🎨 2.5 Riscos Estéticos e Pintura:</strong> O cliente fica ciente de que alguns aparelhos podem descascar a tinta ao serem abertos e que a F5TEC fica imune ao prejuízo caso isso acontecer. O cliente será informado e, caso queira substituir a peça, será orçado; do contrário, será instalada a peça danificada, já que se trata apenas de fins estéticos.<br><br>
+        <strong>💧 2.6 Danos por Líquido / Aparelhos Molhados:</strong> Aparelhos com contato prévio com líquidos podem apresentar falhas secundárias invisíveis mesmo após o reparo. A F5TEC não se responsabiliza por componentes adicionais afetados por oxidação.<br><br>
+        <strong>📱 2.7 Acessórios e Chips:</strong> A assistência não se responsabiliza por películas, capas, chips (SIM), cartões de memória ou quaisquer partes externas e acessórios deixados junto ao aparelho.<br><br>
+        <strong>🛵 2.8 Logística (Tele-busca e Entrega):</strong> Oferecemos serviço de coleta e entrega. O serviço será isento caso o orçamento seja aprovado. Caso reprovado ou em caso de desistência, será cobrada uma taxa de deslocamento previamente informada.<br><br>
+        <strong>🔄 2.9 Aparelho Reserva (Comodato):</strong> Caso a F5TEC disponibilize um aparelho reserva em regime de comodato, este é de uso temporário e deve ser devolvido nas mesmas condições. Quaisquer danos, quedas, mau uso ou furto serão de responsabilidade total do cliente, podendo o valor de reposição ser retido sobre o aparelho original em manutenção.<br><br>
+
+        <strong>🛡️ 3 TERMO DE GARANTIA</strong><br><br>
+        <strong>🗓️ 3.1 Cobertura e Prazos:</strong> A garantia é de 90 (noventa) dias, de acordo com o Art. 26, inciso II do CDC (para serviços e produtos duráveis). A garantia cobre exclusivamente a peça substituída e o serviço descrito nesta O.S. (Nota Fiscal), não abrangendo outras partes ou defeitos do aparelho.<br><br>
+        <strong>🚫 3.2 Perda Automática de Garantia:</strong> A garantia será imediatamente cancelada caso o aparelho apresente:
+        <ul>
+          <li>Quedas, esmagamentos, pressões, arranhões ou sobrecarga elétrica.</li>
+          <li>Lente, display (tela) ou touchscreen que apresentem trincados, quebras, riscos profundos, manchas internas, descolamento ou cabo flex rompido.</li>
+          <li>Exposição a altas temperaturas, umidade, líquidos, pó, poeira ou limalhas metálicas.</li>
+          <li>Abertura do equipamento ou tentativa de conserto por terceiros não autorizados pela F5TEC.</li>
+          <li>Violação, remoção ou rasura do selo/lacre interno de garantia da loja.</li>
+          <li>Mau funcionamento após a instalação de aplicativos maliciosos ou atualizações/modificações no sistema operacional.</li>
+        </ul>
+        <br>
+        <strong>💡 3.3 Observações Importantes:</strong>
+        <ul>
+          <li>Após ser aberto para reparo, o aparelho perde qualquer certificação original de proteção ou resistência contra água e poeira.</li>
+          <li>Funcionamento de aplicativos, sistema operacional e limpeza do aparelho não fazem parte da garantia.</li>
+          <li>A não apresentação deste termo ou da ordem de serviço inválida a garantia.</li>
+          <li>Após o acionamento da garantia, a loja terá o prazo legal de até 7 (sete) dias úteis para análise e resolução do caso.</li>
+        </ul>
+        <br>
+        <strong>✅ 4 DECLARAÇÃO DE RECEBIMENTO E ACEITE LEGAL</strong><br><br>
+        <strong>👉 4.1</strong> Confirmo que li este termo de orçamento, serviço e garantia e fui orientado sobre o seu conteúdo.<br><br>
+        <strong>👍</strong> Declaro que recebi o aparelho nas condições descritas, testei o equipamento no ato da entrega e o mesmo saiu em perfeito estado estético e de funcionamento conforme checklist.<br><br>
+        <strong>🆗</strong> O envio/recebimento digital deste documento e o pagamento do serviço ou a retirada do equipamento constituem <strong>ACEITE DIGITAL</strong> integral, irrevogável e automático de todas as condições e exclusões aqui descritas, substituindo a assinatura física e possuindo total validade legal.
+
       </div>
       <label class="checkbox-row" for="aceiteTermos">
         <input type="checkbox" id="aceiteTermos" required>
@@ -507,6 +579,15 @@
   let validacaoIniciada = false;
   const marcacaoAutomaticaPorEtapa = { ENTRADA: false, "SAÍDA": false };
 
+  // TAXAS TOTAIS DA MAQUININHA (Baseado na simulação do usuário)
+  // O valor já representa a porcentagem TOTAL a ser acrescida no valor base.
+  const TAXAS_PARCELAMENTO = {
+    1: 3.08, 2: 10.74, 3: 12.09, 4: 12.45, 5: 14.76,
+    6: 15.01, 7: 16.96, 8: 17.20, 9: 19.55, 10: 20.46,
+    11: 20.73, 12: 22.02, 13: 23.13, 14: 24.25, 15: 25.36,
+    16: 26.48, 17: 27.59, 18: 28.70
+  };
+
   const itensTriagem = [
     { id: "caiu", label: "Caiu?", opcoes: ["Sim", "Não", "Não sei"] },
     { id: "molhou", label: "Molhou / Teve contato com líquido?", opcoes: ["Sim", "Não", "Não sei"] },
@@ -533,11 +614,133 @@
     return valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
   }
 
+  function formatarPercentual(valor) {
+    return valor.toLocaleString("pt-BR", { maximumFractionDigits: 2 });
+  }
+
   function calcularTotaisCategoria(categoria) {
     return registrosOS
       .filter(registro => registro.categoria === categoria)
       .reduce((total, registro) => total + (registro.quantidade * registro.valor), 0);
   }
+
+  /* ============================================================
+     FORMA DE PAGAMENTO (DINHEIRO / PIX / CARTÃO ATÉ 18x)
+     ============================================================ */
+
+  function popularParcelas() {
+    const select = document.getElementById("parcelasCartao");
+    select.replaceChildren();
+    for (let i = 1; i <= 18; i++) {
+      const opt = document.createElement("option");
+      opt.value = String(i);
+      opt.textContent = i === 1 ? "1x (à vista)" : `${i}x`;
+      select.appendChild(opt);
+    }
+  }
+
+  function atualizarTaxaCartao() {
+    const parcelas = document.getElementById("parcelasCartao").value;
+    if (TAXAS_PARCELAMENTO[parcelas]) {
+      document.getElementById("taxaCartao").value = TAXAS_PARCELAMENTO[parcelas].toFixed(2).replace(".", ",");
+    } else {
+      document.getElementById("taxaCartao").value = "";
+    }
+  }
+
+  function obterDadosPagamento() {
+    const forma = document.getElementById("formaPagamento").value;
+    const total = calcularTotaisCategoria("Peça") + calcularTotaisCategoria("Serviço");
+    const parcelas = Math.max(1, Number(document.getElementById("parcelasCartao").value) || 1);
+    const taxaTexto = document.getElementById("taxaCartao").value.trim().replace(",", ".");
+    const taxa = Number(taxaTexto);
+    const taxaValida = taxaTexto !== "" && Number.isFinite(taxa) && taxa >= 0;
+
+    let totalFinal = total;
+    let acrescimo = 0;
+
+    if (forma === "Cartão de Crédito") {
+      const taxaAplicada = taxaValida ? taxa : 0;
+      totalFinal = taxaAplicada > 0 ? total * (1 + taxaAplicada / 100) : total;
+      acrescimo = totalFinal - total;
+    }
+
+    return {
+      forma,
+      total,
+      parcelas,
+      taxa: taxaValida ? taxa : 0,
+      taxaValida,
+      acrescimo,
+      totalFinal,
+      valorParcela: totalFinal / parcelas
+    };
+  }
+
+  function renderizarPagamento() {
+    const dados = obterDadosPagamento();
+
+    document.getElementById("resumoFormaPagamento").textContent = dados.forma || "Não informada";
+
+    const linhaParcelas = document.getElementById("linhaParcelas");
+    const linhaAcrescimo = document.getElementById("linhaAcrescimo");
+    const ehCartao = dados.forma === "Cartão de Crédito";
+
+    linhaParcelas.classList.toggle("hidden", !ehCartao);
+    linhaAcrescimo.classList.toggle("hidden", !ehCartao);
+
+    if (ehCartao) {
+      document.getElementById("resumoParcelas").textContent =
+        `${dados.parcelas}x de ${formatarMoeda(dados.valorParcela)}`;
+      document.getElementById("resumoAcrescimo").textContent = dados.taxaValida
+        ? `${formatarPercentual(dados.taxa)}% (${formatarMoeda(dados.acrescimo)})`
+        : "Informe a taxa";
+    }
+
+    document.getElementById("totalComPagamento").textContent = formatarMoeda(dados.totalFinal);
+  }
+
+  function atualizarCamposPagamento() {
+    const ativo = modoAtual === "os";
+    const forma = document.getElementById("formaPagamento").value;
+    const ehCartao = ativo && forma === "Cartão de Crédito";
+
+    document.getElementById("formaPagamento").disabled = !ativo;
+    document.getElementById("campoParcelas").classList.toggle("hidden", !ehCartao);
+    document.getElementById("campoTaxaCartao").classList.toggle("hidden", !ehCartao);
+    document.getElementById("parcelasCartao").disabled = !ehCartao;
+    document.getElementById("taxaCartao").disabled = !ehCartao;
+    document.getElementById("parcelasCartao").required = ehCartao;
+    document.getElementById("taxaCartao").required = ehCartao;
+
+    if (ehCartao) {
+      atualizarTaxaCartao();
+    }
+
+    renderizarPagamento();
+  }
+
+  function gerarResumoPagamento() {
+    const dados = obterDadosPagamento();
+    let resumo = "*6. FORMA DE PAGAMENTO*\n";
+
+    if (!dados.forma) {
+      return resumo + "• Não informada";
+    }
+
+    resumo += `• Forma: ${dados.forma}\n`;
+    if (dados.forma === "Cartão de Crédito") {
+      resumo += `• Parcelas: ${dados.parcelas}x de ${formatarMoeda(dados.valorParcela)}\n`;
+      resumo += `• Taxa da maquininha: ${formatarPercentual(dados.taxa)}% (total)\n`;
+      resumo += `• Acréscimo repassado: ${formatarMoeda(dados.acrescimo)}\n`;
+    }
+    resumo += `• *Total a pagar: ${formatarMoeda(dados.totalFinal)}*`;
+    return resumo;
+  }
+
+  /* ============================================================
+     PEÇAS E SERVIÇOS
+     ============================================================ */
 
   function criarItemRegistro(registro) {
     const item = document.createElement("div");
@@ -593,14 +796,14 @@
     document.getElementById("totalPecas").textContent = formatarMoeda(totalPecas);
     document.getElementById("totalServicos").textContent = formatarMoeda(totalServicos);
     document.getElementById("totalGeral").textContent = formatarMoeda(totalPecas + totalServicos);
+
+    renderizarPagamento();
   }
 
   function adicionarRegistroOS() {
     const categoria = document.getElementById("categoriaRegistro").value;
     const descricao = document.getElementById("descricaoRegistro").value.trim();
-    // Quantidade: aceita apenas dígitos (input type=text + inputmode=numeric)
     const quantidade = Number(document.getElementById("quantidadeRegistro").value.trim());
-    // Valor: aceita vírgula (padrão BR) e converte para ponto
     const valorRaw = document.getElementById("valorRegistro").value.trim().replace(",", ".");
     const valor = Number(valorRaw);
 
@@ -666,6 +869,10 @@
     return resumo;
   }
 
+  /* ============================================================
+     TRIAGEM / CHECKLIST
+     ============================================================ */
+
   function criarGrupoOpcoes(containerId, lista, opcoesPadrao) {
     const container = document.getElementById(containerId);
     lista.forEach((item, idx) => {
@@ -730,14 +937,15 @@
       : "#formOS .field, #formOS .checkbox-row";
 
     document.querySelectorAll(seletorCampos).forEach(campo => {
-      if (campo.closest("#listaHardware") && areaChecklistOculta) {
+      const visivel = campo.getClientRects().length > 0;
+      if (!visivel || (campo.closest("#listaHardware") && areaChecklistOculta)) {
         campo.classList.remove("has-pending");
+        campo.querySelectorAll("[aria-invalid]").forEach(el => el.removeAttribute("aria-invalid"));
         return;
       }
 
       let pendente = false;
 
-      // Radios (grupos de triagem e hardware)
       const radios = campo.querySelectorAll('input[type="radio"]');
       if (radios.length) {
         const semSelecao = !campo.querySelector('input[type="radio"]:checked');
@@ -751,7 +959,6 @@
         });
       }
 
-      // Controles não-radio
       campo.querySelectorAll('input:not([type="radio"]), select, textarea').forEach(controle => {
         if (controle.willValidate) {
           const invalido = !controle.checkValidity();
@@ -830,7 +1037,6 @@
       document.getElementById(id).required = fotosSaidaObrigatorias;
     });
 
-    // Auto-marcação apenas UMA VEZ por etapa (não sobrescreve alterações manuais)
     if (checklistLiberado && obterValorRadio("liga") === "Não" && !marcacaoAutomaticaPorEtapa[estagio]) {
       marcacaoAutomaticaPorEtapa[estagio] = true;
       marcarTodosNaoTestados();
@@ -882,6 +1088,13 @@
   formularioOS.addEventListener("change", atualizarEstadoEnvio);
   document.getElementById("irParaPendencia").addEventListener("click", irParaPrimeiraPendencia);
   document.getElementById("possuiAcessorios").addEventListener("change", atualizarCampoAcessorios);
+
+  document.getElementById("formaPagamento").addEventListener("change", atualizarCamposPagamento);
+  document.getElementById("parcelasCartao").addEventListener("change", () => {
+    atualizarTaxaCartao();
+    renderizarPagamento();
+  });
+  document.getElementById("taxaCartao").addEventListener("input", renderizarPagamento);
 
   const formularioAcessoProtegido = document.getElementById("formAcessoProtegido");
   formularioAcessoProtegido.addEventListener("submit", event => {
@@ -957,7 +1170,6 @@
 
     modoAtual = modo;
 
-    // [Item 9] Recalcular status da entrada ao entrar no modo técnico (garante SAÍDA bloqueada se entrada inválida)
     if (modo === "tecnico" && document.getElementById("estagioChecklist").value === "ENTRADA") {
       inspecaoEntradaConcluida = calcularEntradaConcluida();
     }
@@ -976,6 +1188,7 @@
     document.getElementById("blocoTriagem").classList.toggle("hidden", modo === "os");
     document.getElementById("blocoTermos").classList.toggle("hidden", modo === "os");
 
+    atualizarCamposPagamento();
     atualizarEstadoEnvio();
     if (modo === "tecnico" || modo === "os") {
       irParaPrimeiraPendencia();
@@ -1003,7 +1216,6 @@
       const alvo = grp.querySelector('input[value="Não Testado"]');
       if (alvo) alvo.checked = true;
     });
-    // Não chama mais atualizarEstadoEnvio (evita recursão — o chamador atualiza)
   }
 
   function obterValorRadio(nome) {
@@ -1020,6 +1232,54 @@
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
+  }
+
+  function obterFotosEtapaAtual() {
+    const estagio = document.getElementById("estagioChecklist").value;
+    const ids = estagio === "ENTRADA"
+      ? ["fotoEntrada1", "fotoEntrada2"]
+      : ["fotoSaida1", "fotoSaida2"];
+
+    const arquivos = [];
+    ids.forEach(id => {
+      const input = document.getElementById(id);
+      if (input && input.files) {
+        Array.from(input.files).forEach(file => arquivos.push(file));
+      }
+    });
+    return arquivos;
+  }
+
+  function enviarMensagemComFotos(numero, texto, arquivos) {
+    const url = `https://wa.me/${numero}?text=${encodeURIComponent(texto)}`;
+
+    if (!arquivos.length) {
+      abrirWhatsApp(url);
+      return;
+    }
+
+    let podeCompartilhar = false;
+    if (navigator.share && navigator.canShare) {
+      try {
+        podeCompartilhar = navigator.canShare({ files: arquivos });
+      } catch (erro) {
+        podeCompartilhar = false;
+      }
+    }
+
+    if (!podeCompartilhar) {
+      abrirWhatsApp(url);
+      alert("Seu navegador não permite anexar as fotos automaticamente.\n\nO WhatsApp foi aberto com o texto do checklist — anexe as 2 fotos manualmente (elas continuam carregadas no formulário).");
+      return;
+    }
+
+    navigator.share({ files: arquivos, text: texto })
+      .catch(erro => {
+        if (erro && erro.name === "AbortError") return;
+        console.warn("Falha ao compartilhar fotos:", erro);
+        abrirWhatsApp(url);
+        alert("Não foi possível anexar as fotos automaticamente.\n\nO WhatsApp foi aberto com o texto do checklist — anexe as 2 fotos manualmente.");
+      });
   }
 
   function enviarWhatsApp(e) {
@@ -1039,7 +1299,7 @@
       const telefoneComCodigoPais = telefoneCliente.length === 10 || telefoneCliente.length === 11
         ? `55${telefoneCliente}`
         : telefoneCliente;
-      // [Item 6] Feedback claro quando telefone é inválido
+
       if (!/^55\d{10,11}$/.test(telefoneComCodigoPais)) {
         alert("Telefone do cliente inválido. Verifique DDD + número antes de enviar.");
         document.getElementById("telefone").focus();
@@ -1047,24 +1307,35 @@
       }
 
       numeroDestino = telefoneComCodigoPais;
+
+      const estagioAtual = document.getElementById("estagioChecklist").value;
+      const fotos = obterFotosEtapaAtual();
+
       msg = `*F5TEC - CONFERÊNCIA DO CHECKLIST*\n`;
       msg += `Olá, ${document.getElementById("cliente").value}! Confira o checklist técnico do seu aparelho:\n\n`;
       msg += `• Marca: ${document.getElementById("marca").value}\n`;
       msg += `• Modelo: ${document.getElementById("modelo").value}\n`;
-      msg += `• Estágio da inspeção: ${document.getElementById("estagioChecklist").value}\n`;
-      msg += `• Fotos registradas no app: ${document.getElementById("fotosApp").value}\n\n`;
+      msg += `• Estágio da inspeção: ${estagioAtual}\n`;
+      msg += `• Fotos registradas no app: ${document.getElementById("fotosApp").value}\n`;
+      msg += `• Fotos da inspeção de ${estagioAtual}: ${fotos.length} foto(s)\n\n`;
       itensHardware.forEach((nome, idx) => {
         msg += `• ${nome}: *${obterValorRadio("hw_" + idx)}*\n`;
       });
       msg += `\nPor favor, confira as informações e responda a esta mensagem caso tenha alguma observação.`;
-    } else if (modoAtual === "os") {
+
+      enviarMensagemComFotos(numeroDestino, msg, fotos);
+      return;
+    }
+
+    if (modoAtual === "os") {
       msg = `*F5TEC - PEÇAS E SERVIÇOS DA ORDEM DE SERVIÇO*\n`;
       msg += `Data: ${dataAtual}\n\n`;
       msg += `• Cliente: ${document.getElementById("cliente").value}\n`;
       msg += `• Telefone/WhatsApp: ${document.getElementById("telefone").value}\n`;
       msg += `• Marca: ${document.getElementById("marca").value}\n`;
       msg += `• Modelo: ${document.getElementById("modelo").value}\n\n`;
-      msg += `${gerarResumoRegistrosOS()}\n`;
+      msg += `${gerarResumoRegistrosOS()}\n\n`;
+      msg += `${gerarResumoPagamento()}\n`;
     } else {
       msg = `*F5TEC - CHECK-IN DE ORDEM DE SERVIÇO*\n`;
       msg += `Data Entrada: ${dataAtual}\n\n`;
@@ -1106,42 +1377,38 @@
 
     formularioOS.reset();
 
-    // Registros de peças/serviços
     registrosOS = [];
     proximoRegistroId = 1;
     renderizarRegistrosOS();
 
-    // Desenho de padrão
     sequenciaPadrao = [];
     document.querySelectorAll(".dot-btn").forEach(b => b.classList.remove("selected"));
 
-    // Garantir que todos os radios sejam desmarcados (reset pode não limpar se algum foi marcado via JS)
     document.querySelectorAll('#formOS input[type="radio"]').forEach(input => {
       input.checked = false;
     });
 
-    // Flags de estado
     inspecaoEntradaConcluida = false;
     checklistEstavaLiberado = false;
     validacaoIniciada = false;
     marcacaoAutomaticaPorEtapa.ENTRADA = false;
     marcacaoAutomaticaPorEtapa["SAÍDA"] = false;
 
-    // Estágio
     seletorEstagio.value = "ENTRADA";
     estagioAnterior = "ENTRADA";
 
-    // Volta ao modo cliente
     alternarModo("cliente");
 
-    // Atualizações finais
     atualizarCampoAcessorios();
+    atualizarCamposPagamento();
     atualizarEstadoEnvio();
 
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
+  popularParcelas();
   atualizarCampoAcessorios();
+  atualizarCamposPagamento();
   atualizarEstadoEnvio();
   renderizarRegistrosOS();
 </script>
