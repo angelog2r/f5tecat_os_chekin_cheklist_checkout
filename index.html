@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>F5TEC | Check-in e Checklist de OS</title>
+  <title>F5TEC | Sistema de Gestão de OS</title>
   <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
   <style>
     :root {
@@ -17,6 +17,7 @@
       --border: #374151;
       --danger: #ef4444;
       --success: #22c55e;
+      --warning: #f59e0b;
     }
     * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     body { margin: 0; background: var(--bg); color: var(--text); padding-bottom: 40px; }
@@ -25,208 +26,118 @@
     header h1 { margin: 0; font-size: 1.25rem; }
     header p { margin: 4px 0 0; font-size: 0.85rem; opacity: 0.8; }
     .container { max-width: 600px; margin: 16px auto; padding: 0 12px; }
-    .mode-switch { display: flex; gap: 8px; margin-bottom: 16px; background: #2d2d2d; padding: 4px; border-radius: 8px; }
-    .mode-btn { flex: 1; padding: 10px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; background: transparent; color: #9ca3af; transition: 0.2s; }
+    
+    /* Abas */
+    .mode-switch { display: flex; gap: 4px; margin-bottom: 16px; background: #2d2d2d; padding: 4px; border-radius: 8px; flex-wrap: wrap; }
+    .mode-btn { flex: 1; min-width: 120px; padding: 10px 6px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; background: transparent; color: #9ca3af; transition: 0.2s; font-size: 0.85rem; text-align: center; }
     .mode-btn.active { background: var(--card); color: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
-    #dialogAcessoProtegido {
-      position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center;
-      padding: 16px; background: rgba(0, 0, 0, 0.8);
-    }
+    .mode-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    
+    #dialogAcessoProtegido { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 16px; background: rgba(0, 0, 0, 0.8); }
     #dialogAcessoProtegido.hidden { display: none; }
-    .password-dialog {
-      width: min(100%, 380px); padding: 20px; background: var(--card);
-      border-radius: 10px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5); border: 1px solid var(--border);
-    }
+    .password-dialog { width: min(100%, 380px); padding: 20px; background: var(--card); border-radius: 10px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5); border: 1px solid var(--border); }
     .password-dialog h2 { margin: 0 0 14px; font-size: 1.05rem; }
-    .password-dialog input {
-      width: 100%; padding: 10px; border: 1px solid var(--border);
-      border-radius: 6px; font-size: 1rem; background: #27272a; color: #fff;
-    }
+    .password-dialog input { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 1rem; background: #27272a; color: #fff; }
     .password-dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
-    .password-dialog-actions button {
-      padding: 9px 14px; border: 0; border-radius: 6px; font-weight: 600; cursor: pointer;
-    }
+    .password-dialog-actions button { padding: 9px 14px; border: 0; border-radius: 6px; font-weight: 600; cursor: pointer; }
     #confirmarSenha { background: var(--accent); color: #fff; }
     #cancelarSenha { background: #374151; color: var(--text); }
+    
     .card { background: var(--card); border-radius: 10px; padding: 16px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.3); border: 1px solid #2d2d2d; }
     .card h2 { margin-top: 0; font-size: 1.05rem; color: #fff; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
     .field { margin-bottom: 14px; }
     label, fieldset.field > legend { display: block; font-size: 0.88rem; font-weight: 600; margin-bottom: 5px; padding: 0; color: #d1d5db; }
-    input[type="text"], input[type="tel"], input[type="number"], input[type="file"], select, textarea {
-      width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.95rem;
-      background: #27272a; color: #fff;
-    }
+    input[type="text"], input[type="tel"], input[type="number"], input[type="file"], select, textarea { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.95rem; background: #27272a; color: #fff; }
     input::placeholder, textarea::placeholder { color: #6b7280; }
-    input:focus, select:focus, textarea:focus {
-      outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
-    }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2); }
     textarea { resize: vertical; min-height: 70px; }
     .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    
     .pattern-helper { background: #27272a; border: 1px dashed var(--accent); border-radius: 8px; padding: 10px; text-align: center; margin-top: 6px; }
     .pattern-grid { display: grid; grid-template-columns: repeat(3, 42px); gap: 8px; justify-content: center; margin: 8px 0; }
-    .dot-btn {
-      width: 42px; height: 42px; border-radius: 50%; border: 2px solid var(--accent);
-      background: #3f3f46; color: #fff; font-weight: bold; cursor: pointer;
-    }
+    .dot-btn { width: 42px; height: 42px; border-radius: 50%; border: 2px solid var(--accent); background: #3f3f46; color: #fff; font-weight: bold; cursor: pointer; }
     .dot-btn.selected { background: var(--accent); color: #fff; }
-    .btn-link {
-      background: transparent; border: none; color: #60a5fa;
-      font-size: 0.75rem; cursor: pointer; padding: 4px; text-decoration: underline;
-    }
+    .btn-link { background: transparent; border: none; color: #60a5fa; font-size: 0.75rem; cursor: pointer; padding: 4px; text-decoration: underline; }
+    
     .radio-group { display: flex; gap: 6px; flex-wrap: wrap; }
-    .radio-pill {
-      flex: 1; text-align: center; padding: 8px 6px; border: 1px solid var(--border);
-      border-radius: 6px; font-size: 0.85rem; cursor: pointer; user-select: none; background: #27272a; color: #d1d5db;
-      position: relative; transition: 0.2s;
-    }
-    .radio-pill input {
-      position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none;
-    }
-    .radio-pill:has(input:checked) {
-      background: #4b5563; color: #fff; border-color: #6b7280; font-weight: 600;
-    }
-    .radio-pill:has(input:focus-visible) {
-      outline: 2px solid var(--accent); outline-offset: 2px;
-    }
-    .radio-pill.option-positive:has(input:checked) {
-      background: #065f46; color: #d1fae5; border-color: var(--success);
-    }
+    .radio-pill { flex: 1; text-align: center; padding: 8px 6px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.85rem; cursor: pointer; user-select: none; background: #27272a; color: #d1d5db; position: relative; transition: 0.2s; min-width: 80px; }
+    .radio-pill input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+    .radio-pill:has(input:checked) { background: #4b5563; color: #fff; border-color: #6b7280; font-weight: 600; }
+    .radio-pill:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .radio-pill.option-positive:has(input:checked) { background: #065f46; color: #d1fae5; border-color: var(--success); }
     .radio-pill.option-positive:has(input:checked)::after { content: " ✓"; }
-    .radio-pill.option-negative:has(input:checked) {
-      background: #7f1d1d; color: #fee2e2; border-color: var(--danger);
-    }
+    .radio-pill.option-negative:has(input:checked) { background: #7f1d1d; color: #fee2e2; border-color: var(--danger); }
     .radio-pill.option-negative:has(input:checked)::after { content: " ✕"; }
-    .radio-pill.option-indecisive:has(input:checked) {
-      background: #1e3a8a; color: #dbeafe; border-color: var(--accent);
-    }
+    .radio-pill.option-indecisive:has(input:checked) { background: #1e3a8a; color: #dbeafe; border-color: var(--accent); }
     .radio-pill.option-indecisive:has(input:checked)::after { content: " 🤔"; }
-    fieldset.field {
-      border: 0; padding: 0; margin: 0 0 14px; min-width: 0;
-    }
+    
+    fieldset.field { border: 0; padding: 0; margin: 0 0 14px; min-width: 0; }
     fieldset.field > legend { margin-bottom: 5px; width: 100%; }
-    .terms-box {
-      max-height: 450px; 
-      overflow-y: auto; 
-      background: #27272a; 
-      border: 1px solid var(--border);
-      padding: 16px; 
-      border-radius: 6px; 
-      font-size: 0.82rem; 
-      line-height: 1.5; 
-      color: #d1d5db; 
-      margin-bottom: 12px;
-      text-align: justify;
-    }
+    
+    .terms-box { max-height: 450px; overflow-y: auto; background: #27272a; border: 1px solid var(--border); padding: 16px; border-radius: 6px; font-size: 0.82rem; line-height: 1.5; color: #d1d5db; margin-bottom: 12px; text-align: justify; }
     .terms-box strong { color: #fff; }
     .terms-box ul { margin-top: 5px; margin-bottom: 10px; padding-left: 20px; }
     .terms-box li { margin-bottom: 4px; }
+    
     .checkbox-row { display: flex; align-items: flex-start; gap: 10px; font-size: 0.88rem; font-weight: 600; color: #d1d5db; }
     .checkbox-row input { width: 18px; height: 18px; margin-top: 2px; flex-shrink: 0; accent-color: var(--accent); }
-    .field.has-pending > label,
-    .field.has-pending > legend,
-    .checkbox-row.has-pending { color: #fca5a5; }
-    .field.has-pending > label::after,
-    .field.has-pending > legend::after,
-    .checkbox-row.has-pending::after {
-      content: " ⚠"; color: var(--danger); font-weight: bold;
-    }
-    .field.has-pending input:not([type="radio"]),
-    .field.has-pending select,
-    .field.has-pending textarea { border-color: var(--danger); }
+    
+    .field.has-pending > label, .field.has-pending > legend, .checkbox-row.has-pending { color: #fca5a5; }
+    .field.has-pending > label::after, .field.has-pending > legend::after, .checkbox-row.has-pending::after { content: " ⚠"; color: var(--danger); font-weight: bold; }
+    .field.has-pending input:not([type="radio"]), .field.has-pending select, .field.has-pending textarea { border-color: var(--danger); }
     .field.has-pending .radio-pill:not(:has(input:checked)) { border-color: var(--danger); }
-    .validation-summary {
-      display: flex; align-items: center; justify-content: space-between; gap: 10px;
-      background: #450a0a; border: 1px solid #7f1d1d; color: #fca5a5;
-      padding: 10px 12px; border-radius: 6px; margin-bottom: 14px; font-size: 0.9rem;
-    }
-    .validation-summary button {
-      border: none; background: transparent; color: #fca5a5; text-decoration: underline;
-      font-weight: 600; cursor: pointer; white-space: nowrap;
-    }
-    .btn-submit {
-      display: flex; align-items: center; justify-content: center; gap: 12px;
-      width: 100%; min-height: 64px; padding: 18px 20px; background: var(--success); color: #fff; border: none;
-      border-radius: 8px; font-size: 1.1rem; font-weight: bold; cursor: pointer;
-      transition: 0.2s;
-    }
+    
+    .validation-summary { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: #450a0a; border: 1px solid #7f1d1d; color: #fca5a5; padding: 10px 12px; border-radius: 6px; margin-bottom: 14px; font-size: 0.9rem; }
+    .validation-summary button { border: none; background: transparent; color: #fca5a5; text-decoration: underline; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    
+    .btn-submit { display: flex; align-items: center; justify-content: center; gap: 12px; width: 100%; min-height: 64px; padding: 18px 20px; background: var(--success); color: #fff; border: none; border-radius: 8px; font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: 0.2s; }
     .btn-submit svg { width: 28px; height: 28px; flex-shrink: 0; }
     .btn-submit.awaiting-completion { background: #4b5563; color: #9ca3af; cursor: not-allowed; }
     .btn-submit.awaiting-completion svg { opacity: 0.5; }
     .btn-submit:disabled { opacity: 0.7; cursor: wait; }
     #textoBotaoEnvio { font-size: 1rem; line-height: 1.25; text-align: left; }
-    .btn-Quick {
-      background: #b45309; color: #fff; border: none; padding: 8px 12px;
-      border-radius: 6px; font-size: 0.82rem; font-weight: 600; cursor: pointer; margin-bottom: 8px; width: 100%;
-    }
+    
+    .btn-Quick { background: #b45309; color: #fff; border: none; padding: 8px 12px; border-radius: 6px; font-size: 0.82rem; font-weight: 600; cursor: pointer; margin-bottom: 8px; width: 100%; }
     .btn-Quick.ok { background: #15803d; }
-    .btn-novo {
-      display: block; width: 100%; margin-top: 16px; padding: 14px;
-      border: 1px solid var(--border); background: #27272a; color: var(--text);
-      border-radius: 8px; font-weight: 600; font-size: 0.95rem; cursor: pointer;
-    }
+    .btn-action { background: var(--accent); color: #fff; border: none; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 10px; }
+    .btn-novo { display: block; width: 100%; margin-top: 16px; padding: 14px; border: 1px solid var(--border); background: #27272a; color: var(--text); border-radius: 8px; font-weight: 600; font-size: 0.95rem; cursor: pointer; }
     .btn-novo:hover { background: #3f3f46; }
+    
     .hidden { display: none !important; }
     .resumo-registros > div.hidden { display: none; }
-    .field-note {
-      display: block; margin-top: 4px; font-size: 0.78rem; color: #9ca3af; font-weight: normal;
-    }
+    .field-note { display: block; margin-top: 4px; font-size: 0.78rem; color: #9ca3af; font-weight: normal; }
     .field-note.warn { color: #fcd34d; }
-    .noscript-warning {
-      background: #451a03; border: 1px solid #78350f; color: #fcd34d;
-      padding: 12px; margin: 16px; border-radius: 6px; text-align: center; font-weight: 600;
-    }
+    
+    .noscript-warning { background: #451a03; border: 1px solid #78350f; color: #fcd34d; padding: 12px; margin: 16px; border-radius: 6px; text-align: center; font-weight: 600; }
+    
     .registro-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .registro-grid .registro-descricao { grid-column: 1 / -1; }
-    .btn-adicionar {
-      width: 100%; min-height: 42px; padding: 10px; border: none; border-radius: 6px;
-      background: var(--accent); color: #fff; font-weight: 700; cursor: pointer;
-    }
+    .btn-adicionar { width: 100%; min-height: 42px; padding: 10px; border: none; border-radius: 6px; background: var(--accent); color: #fff; font-weight: 700; cursor: pointer; }
     .lista-registros { display: grid; gap: 8px; margin: 10px 0 14px; }
-    .registro-item {
-      display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px;
-      align-items: center; border: 1px solid var(--border); border-radius: 8px;
-      padding: 10px; background: #27272a;
-    }
+    .registro-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; border: 1px solid var(--border); border-radius: 8px; padding: 10px; background: #27272a; }
     .registro-item strong { display: block; overflow-wrap: anywhere; color: #fff; }
     .registro-item small { color: #9ca3af; }
     .registro-valor { text-align: right; font-weight: 700; white-space: nowrap; color: #fff; }
-    .btn-remover {
-      border: none; background: transparent; color: #f87171;
-      cursor: pointer; padding: 4px 0 0; font-size: 0.78rem;
-    }
+    .btn-remover { border: none; background: transparent; color: #f87171; cursor: pointer; padding: 4px 0 0; font-size: 0.78rem; }
     .resumo-registros { display: grid; gap: 6px; border-top: 1px solid var(--border); padding-top: 10px; }
     .resumo-registros div { display: flex; justify-content: space-between; gap: 10px; color: #d1d5db; }
-    .resumo-registros .total-geral {
-      margin-top: 4px; padding-top: 8px; border-top: 2px solid #4b5563;
-      font-size: 1.05rem; font-weight: 800; color: #fff;
-    }
-    .laudo-tecnico {
-      background: #1f2937; border-left: 4px solid var(--accent);
-      padding: 12px; margin-bottom: 16px; font-size: 0.9rem; line-height: 1.4;
-      color: #d1d5db; border-radius: 4px;
-    }
-    /* Caixa de aviso de taxas */
-    .aviso-taxas {
-      background: #450a0a; border: 1px solid #7f1d1d; color: #fca5a5;
-      padding: 14px; border-radius: 8px; margin-bottom: 14px; font-size: 0.88rem; line-height: 1.5;
-    }
+    .resumo-registros .total-geral { margin-top: 4px; padding-top: 8px; border-top: 2px solid #4b5563; font-size: 1.05rem; font-weight: 800; color: #fff; }
+    
+    .laudo-tecnico { background: #1f2937; border-left: 4px solid var(--accent); padding: 12px; margin-bottom: 16px; font-size: 0.9rem; line-height: 1.4; color: #d1d5db; border-radius: 4px; }
+    .aviso-taxas { background: #450a0a; border: 1px solid #7f1d1d; color: #fca5a5; padding: 14px; border-radius: 8px; margin-bottom: 14px; font-size: 0.88rem; line-height: 1.5; }
     .aviso-taxas strong { color: #fff; }
     .aviso-taxas ul { margin: 8px 0 0; padding-left: 20px; }
     .aviso-taxas li { margin-bottom: 4px; }
-    /* Tutorial Maps */
-    .tutorial-maps {
-      background: #1e3a8a; border: 1px solid #3b82f6; border-radius: 6px;
-      padding: 10px 12px; margin: 6px 0 8px; font-size: 0.8rem; line-height: 1.5; color: #dbeafe;
-    }
+    
+    .tutorial-maps { background: #1e3a8a; border: 1px solid #3b82f6; border-radius: 6px; padding: 10px 12px; margin: 6px 0 8px; font-size: 0.8rem; line-height: 1.5; color: #dbeafe; }
     .tutorial-maps strong { color: #fff; }
     .tutorial-maps ol { margin: 6px 0 0; padding-left: 20px; }
     .tutorial-maps li { margin-bottom: 3px; }
-    /* Área Comodato */
-    .comodato-area {
-      margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border);
-    }
+    
+    .comodato-area { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border); }
+    
     @media (max-width: 480px) {
-      .mode-switch { gap: 4px; flex-wrap: wrap; }
+      .mode-switch { gap: 4px; }
       .mode-btn { font-size: 0.75rem; padding: 8px 4px; }
       .registro-grid { grid-template-columns: 1fr 1fr; }
     }
@@ -243,27 +154,30 @@
 <header>
   <img class="header-logo" src="./1777128795714.png" alt="Logo da F5TEC">
   <h1>F5TEC Assistência Técnica</h1>
-  <p>Check-in de Ordem de Serviço e Checklist</p>
+  <p>Sistema de Gestão de Ordens de Serviço</p>
 </header>
 
 <div class="container">
-  <div class="mode-switch" role="group" aria-label="Selecione o modo de preenchimento">
+  <div class="mode-switch" role="group" aria-label="Selecione a etapa">
     <button type="button" class="mode-btn active" id="btnModoCliente" aria-pressed="true" onclick="alternarModo('cliente')">
-      Check-in Cliente
+      1. Cadastro e Recepção
     </button>
     <button type="button" class="mode-btn" id="btnModoTecnico" aria-pressed="false" onclick="alternarModo('tecnico')">
-      Bancada Técnica
+      2. Diagnóstico e Checklist
     </button>
     <button type="button" class="mode-btn" id="btnModoOS" aria-pressed="false" onclick="alternarModo('os')">
-      Financeiro
+      3. Orçamento e Financeiro
+    </button>
+    <button type="button" class="mode-btn" id="btnModoCheckout" aria-pressed="false" onclick="alternarModo('checkout')">
+      4. Checkout de Saída
     </button>
   </div>
 
   <div id="dialogAcessoProtegido" class="hidden" role="dialog" aria-modal="true" aria-labelledby="tituloAcessoProtegido">
     <form id="formAcessoProtegido" class="password-dialog">
-      <h2 id="tituloAcessoProtegido">Acesso protegido</h2>
+      <h2 id="tituloAcessoProtegido">Acesso Restrito</h2>
       <div class="field">
-        <label for="senhaAbas">Digite a senha para acessar a Bancada e Financeiro</label>
+        <label for="senhaAbas">Digite a senha de acesso</label>
         <input type="password" id="senhaAbas" required autocomplete="current-password">
       </div>
       <p id="erroSenhaAbas" class="hidden" role="alert" style="color: #fca5a5; font-size: 0.85rem; margin: 5px 0 0;">Senha incorreta.</p>
@@ -280,10 +194,11 @@
       <button type="button" id="irParaPendencia">Ir para o campo</button>
     </div>
 
+    <!-- ABA 1: CADASTRO E RECEPÇÃO -->
     <div class="card" id="blocoDadosOS">
-      <h2>Dados da Ordem de Serviço</h2>
+      <h2>1. Dados do Cliente e do Aparelho</h2>
       <div class="field">
-        <label for="cliente">Cliente (Nome Completo) *</label>
+        <label for="cliente">Nome Completo *</label>
         <input type="text" id="cliente" required autocomplete="name" placeholder="Ex.: João da Silva">
       </div>
       <div class="field">
@@ -299,14 +214,14 @@
                placeholder="Ex.: (11) 99999-9999">
       </div>
       <div class="field">
-        <label for="telefoneAdicional">Telefone / WhatsApp adicional (opcional)</label>
+        <label for="telefoneAdicional">Telefone Adicional (opcional)</label>
         <input type="tel" id="telefoneAdicional" inputmode="tel" autocomplete="tel-national"
                pattern="(?:\D*\d){10,13}\D*" placeholder="Ex.: (11) 99999-9999">
       </div>
       <div class="grid-2">
         <div class="field">
           <label for="marca">Marca *</label>
-          <input type="text" id="marca" required autocomplete="off" placeholder="Ex.: Samsung, Apple">
+          <input type="text" id="marca" required autocomplete="off" placeholder="Ex.: Samsung">
         </div>
         <div class="field">
           <label for="modelo">Modelo *</label>
@@ -316,7 +231,7 @@
       <div class="grid-2">
         <div class="field">
           <label for="cor">Cor *</label>
-          <input type="text" id="cor" required autocomplete="off" placeholder="Ex.: Preto, Branco">
+          <input type="text" id="cor" required autocomplete="off" placeholder="Ex.: Preto">
         </div>
         <div class="field">
           <label for="tipo">Tipo *</label>
@@ -329,9 +244,9 @@
         </div>
       </div>
       <div class="field">
-        <label for="possuiAcessorios">Deixou acessórios junto com o aparelho? *</label>
+        <label for="possuiAcessorios">Deixou acessórios? *</label>
         <select id="possuiAcessorios" required>
-          <option value="" selected disabled>Selecione uma opção</option>
+          <option value="" selected disabled>Selecione</option>
           <option value="Sim">Sim</option>
           <option value="Não">Não</option>
         </select>
@@ -342,21 +257,19 @@
       </div>
 
       <div class="field">
-        <label for="servicoEntrega">Deseja serviço de Tele-busca e Entrega? *</label>
+        <label for="servicoEntrega">Deseja Tele-busca e Entrega? *</label>
         <select id="servicoEntrega" required onchange="atualizarCamposEntrega()">
-          <option value="" selected disabled>Selecione uma opção</option>
+          <option value="" selected disabled>Selecione</option>
           <option value="Não">Não</option>
           <option value="Sim">Sim</option>
         </select>
-        <small class="field-note warn">⚠ O frete é calculado por distância (R$ 1,00/km). O valor do frete só será cobrado caso o reparo não seja efetuado (taxa de deslocamento), conforme Termo 2.8.</small>
+        <small class="field-note warn">⚠ O frete é calculado por distância (R$ 1,00/km). O valor do frete só será cobrado caso o reparo não seja efetuado (taxa de deslocamento).</small>
       </div>
       <div class="field hidden" id="camposEntrega">
-        <label for="enderecoEntrega">Endereço Completo (Rua, Número, Bairro, Cidade) *</label>
-        <input type="text" id="enderecoEntrega" autocomplete="off" placeholder="Ex.: Rua das Flores, 123, Centro, São Paulo">
-
+        <label for="enderecoEntrega">Endereço Completo *</label>
+        <input type="text" id="enderecoEntrega" autocomplete="off" placeholder="Rua, Número, Bairro, Cidade">
         <label for="pontoReferencia" style="margin-top: 8px;">Ponto de Referência</label>
         <input type="text" id="pontoReferencia" autocomplete="off" placeholder="Ex.: Próximo à padaria X">
-
         <label for="linkLocalizacao" style="margin-top: 8px; display: flex; justify-content: space-between; align-items: center;">
           <span>Link da Localização (Google Maps)</span>
           <a href="https://maps.google.com" target="_blank" rel="noopener" style="color: var(--accent); font-size: 0.8rem; text-decoration: underline;">Abrir Maps</a>
@@ -365,24 +278,20 @@
           <strong>📖 Como copiar o link do Google Maps:</strong>
           <ol>
             <li>Toque em <strong>"Abrir Maps"</strong> acima.</li>
-            <li>O Maps carregará e mostrará a sua localização atual (ou busque o endereço).</li>
-            <li>Toque no botão <strong>Compartilhar</strong> (ícone de seta pra cima ou três pontinhos).</li>
-            <li>Selecione <strong>"Copiar link"</strong> (ou "Copiar").</li>
+            <li>Toque no ícone da <strong>Bússola</strong> 🧭 para atualizar sua localização.</li>
+            <li>Toque no botão <strong>Compartilhar</strong> 📤 (ícone de triângulo/seta).</li>
+            <li>Selecione <strong>"Copiar link"</strong>.</li>
             <li>Volte aqui e <strong>cole o link no campo abaixo</strong>.</li>
           </ol>
         </div>
         <input type="text" id="linkLocalizacao" autocomplete="off" placeholder="Cole o link do Google Maps aqui">
-
-        <label for="dataHoraRetirada" style="margin-top: 8px;">Dia e Horário de Retirada *</label>
+        <label for="dataHoraRetirada" style="margin-top: 8px;">Dia e Horário de Retirada (Preferência) *</label>
         <input type="text" id="dataHoraRetirada" autocomplete="off" placeholder="Ex.: Segunda-feira, às 14h">
-
-        <small class="field-note warn" style="margin-top:8px;">⚠ Será cobrada uma taxa de diagnóstico caso o reparo não seja efetuado (conforme Termo 2.1).</small>
       </div>
 
       <div class="field">
-        <label for="senha">Senha de Desbloqueio (PIN, Texto ou Padrão) *</label>
+        <label for="senha">Senha de Desbloqueio *</label>
         <input type="text" id="senha" required autocomplete="off" placeholder="Digite a senha ou use o desenhador abaixo">
-        <small class="field-note warn">⚠ A senha será incluída na mensagem do WhatsApp enviada para a F5TEC.</small>
         <div class="pattern-helper">
           <small>Usa senha de desenho? Toque nos números na ordem do traço:</small>
           <div class="pattern-grid">
@@ -400,36 +309,74 @@
         </div>
       </div>
       <div class="field">
-        <label for="defeito">Defeito / Reclamação Principal *</label>
+        <label for="defeito">Defeito Relatado *</label>
         <textarea id="defeito" required minlength="5" autocomplete="off" placeholder="Descreva o que aconteceu com o aparelho..."></textarea>
       </div>
       <div class="field">
         <label for="observacao">Observação Adicional</label>
-        <input type="text" id="observacao" autocomplete="off" placeholder="Algum detalhe estético ou aviso importante?">
+        <input type="text" id="observacao" autocomplete="off" placeholder="Detalhes estéticos ou avisos importantes">
       </div>
     </div>
 
     <div class="card" id="blocoTriagem">
-      <h2>Triagem de Entrada (Check-in)</h2>
+      <h2>Triagem Inicial (Cliente)</h2>
       <div id="perguntasTriagem"></div>
-      <!-- Aviso ao cliente — dados do comodato são preenchidos pela assistência -->
       <div id="avisoComodatoCliente" class="field-note hidden" style="margin-top:10px;padding:10px;background:#1e3a8a;border:1px solid #3b82f6;border-radius:6px;color:#dbeafe;font-size:0.82rem;line-height:1.4;">
-        ℹ️ <strong>A assistência entrará em contato</strong> para confirmar a disponibilidade e registrar os dados do aparelho reserva (marca, modelo, IMEI e foto). Você não precisa preencher nada além desta resposta.
+        ℹ️ <strong>A assistência entrará em contato</strong> para confirmar a disponibilidade do aparelho reserva.
       </div>
     </div>
 
+    <!-- ABA 2: DIAGNÓSTICO E CHECKLIST (TÉCNICO) -->
     <div class="card hidden" id="blocoTecnico">
-      <h2>Checklist Técnico e Diagnóstico de Bancada (Entrada / Saída)</h2>
-      <div class="field">
-        <label for="estagioChecklist">Estágio da Inspeção</label>
-        <select id="estagioChecklist">
-          <option value="ENTRADA">Inspeção e Diagnóstico de ENTRADA</option>
-          <option value="SAÍDA" disabled>Inspeção e Diagnóstico de SAÍDA (Entrega)</option>
-        </select>
-      </div>
+      <h2>2. Checklist e Diagnóstico de Entrada</h2>
       
-      <div class="field" id="fotosEntrada">
-        <label>Fotos da inspeção de ENTRADA * (6 fotos)</label>
+      <!-- Agendamento de Coleta (se solicitado pelo cliente) -->
+      <div id="areaAgendamentoColeta" class="field hidden" style="background: #27272a; padding: 12px; border-radius: 8px; border: 1px solid var(--warning);">
+        <h3 style="margin-top: 0; font-size: 0.95rem; color: #fcd34d;">📦 Agendar Coleta / Entrega</h3>
+        <p style="font-size: 0.8rem; color: #9ca3af; margin-bottom: 8px;">O cliente solicitou o serviço de Tele-busca.</p>
+        <div class="field">
+          <label for="dataHoraColetaTecnico">Data e Horário Confirmado para Coleta *</label>
+          <input type="text" id="dataHoraColetaTecnico" autocomplete="off" placeholder="Ex.: Segunda-feira, às 14h">
+        </div>
+      </div>
+
+      <!-- Comodato -->
+      <div id="areaComodato" class="comodato-area hidden">
+        <h3 style="margin-top:0; font-size:0.95rem; color:#fff; border-bottom:1px solid var(--border); padding-bottom:8px;">Aparelho Reserva (Comodato)</h3>
+        <p style="font-size: 0.82rem; color: #9ca3af; margin-bottom: 10px;">Cliente solicitou aparelho reserva.</p>
+        
+        <div class="field">
+          <label>Há disponibilidade de aparelho reserva? *</label>
+          <div class="radio-group">
+            <label class="radio-pill option-positive">
+              <input type="radio" name="disponibilidadeComodato" value="Sim" onchange="atualizarCamposComodato()"> Sim
+            </label>
+            <label class="radio-pill option-negative">
+              <input type="radio" name="disponibilidadeComodato" value="Não" onchange="atualizarCamposComodato()"> Não
+            </label>
+          </div>
+        </div>
+
+        <div id="camposComodato" class="hidden">
+          <div class="grid-2">
+            <div class="field"><label for="comodatoMarca">Marca *</label><input type="text" id="comodatoMarca" placeholder="Ex.: Samsung"></div>
+            <div class="field"><label for="comodatoModelo">Modelo *</label><input type="text" id="comodatoModelo" placeholder="Ex.: Galaxy A10"></div>
+          </div>
+          <div class="field"><label for="comodatoObservacao">Estado / Observações *</label><input type="text" id="comodatoObservacao" placeholder="Ex.: Tela trincada no canto"></div>
+          
+          <label style="margin-top:8px;">Fotos de Identificação *</label>
+          <div class="grid-2">
+            <div><label for="comodatoFotoFrente" style="font-size:0.8rem; font-weight:normal;">Frente</label><input type="file" id="comodatoFotoFrente" accept="image/*" capture="environment"></div>
+            <div><label for="comodatoFotoVerso" style="font-size:0.8rem; font-weight:normal;">Verso</label><input type="file" id="comodatoFotoVerso" accept="image/*" capture="environment"></div>
+            <div><label for="comodatoFotoIMEI" style="font-size:0.8rem; font-weight:normal;">IMEI</label><input type="file" id="comodatoFotoIMEI" accept="image/*" capture="environment"></div>
+          </div>
+          <p style="color: #fcd34d; font-size: 0.8rem; margin-top: 10px; font-weight: bold;">⚠ Lembrete: Recolher o aparelho no Checkout.</p>
+        </div>
+      </div>
+
+      <!-- Fotos de Entrada -->
+      <div class="field" id="fotosEntrada" style="margin-top: 16px;">
+        <label>Fotos de Entrada * (6 fotos)</label>
         <div class="grid-2">
           <div><label for="fotoEntrada1">Foto 1</label><input type="file" id="fotoEntrada1" accept="image/*"></div>
           <div><label for="fotoEntrada2">Foto 2</label><input type="file" id="fotoEntrada2" accept="image/*"></div>
@@ -440,149 +387,55 @@
         </div>
       </div>
 
-      <div class="field hidden" id="fotosSaida">
-        <label>Fotos do aparelho pronto para inspeção de SAÍDA * (7 fotos)</label>
-        <div class="grid-2">
-          <div><label for="fotoSaida1">Foto 1</label><input type="file" id="fotoSaida1" accept="image/*"></div>
-          <div><label for="fotoSaida2">Foto 2</label><input type="file" id="fotoSaida2" accept="image/*"></div>
-          <div><label for="fotoSaida3">Foto 3</label><input type="file" id="fotoSaida3" accept="image/*"></div>
-          <div><label for="fotoSaida4">Foto 4</label><input type="file" id="fotoSaida4" accept="image/*"></div>
-          <div><label for="fotoSaida5">Foto 5</label><input type="file" id="fotoSaida5" accept="image/*"></div>
-          <div><label for="fotoSaida6">Foto 6</label><input type="file" id="fotoSaida6" accept="image/*"></div>
-          <div><label for="fotoSaida7">Foto 7 (IMEI)</label><input type="file" id="fotoSaida7" accept="image/*"></div>
-        </div>
-      </div>
-      <small style="color: #9ca3af;">As fotos da etapa selecionada são obrigatórias. Conclua as fotos e todos os itens do checklist de entrada para liberar a inspeção de saída. Ao trocar de etapa, as marcações do checklist são reiniciadas. <strong style="color: #fff;">As fotos da etapa selecionada serão compartilhadas junto com a mensagem pelo próprio celular (Android/iOS).</strong> Se o navegador não permitir o envio automático, o WhatsApp será aberto com o texto e você anexa as fotos manualmente.</small>
-
       <div class="field">
         <label for="fotosApp">Fotos Registradas no App?</label>
         <select id="fotosApp">
-          <option value="Sim (Fotos inseridas na OS)">Sim (Fotos inseridas na OS)</option>
+          <option value="Sim (Fotos inseridas na OS)">Sim</option>
           <option value="Pendente">Pendente</option>
         </select>
       </div>
 
       <div id="areaChecklistTecnico">
-        <button type="button" class="btn-Quick ok" onclick="marcarTodosOK(); atualizarEstadoEnvio();">
-          Marcar Todos como "OK"
-        </button>
-        <button type="button" class="btn-Quick" onclick="marcarTodosNaoTestados(); atualizarEstadoEnvio();">
-          Aparelho Não Liga: Marcar todos como "Impossível Testar"
-        </button>
+        <button type="button" class="btn-Quick ok" onclick="marcarTodosOK(); atualizarEstadoEnvio();">Marcar Todos "OK"</button>
+        <button type="button" class="btn-Quick" onclick="marcarTodosNaoTestados(); atualizarEstadoEnvio();">Aparelho Não Liga (Não Testado)</button>
         <div id="listaHardware"></div>
       </div>
 
-      <!-- Área de Comodato (preenchida SOMENTE pelo técnico, quando há disponibilidade) -->
-      <div id="areaComodato" class="comodato-area hidden">
-        <h2 style="margin-top:0;border-bottom:1px solid var(--border);padding-bottom:8px;">Aparelho Reserva (Comodato)</h2>
-        <small class="field-note" style="margin-bottom:12px;">O cliente solicitou aparelho reserva. Preencha os dados do aparelho que será emprestado (se houver disponibilidade). A foto será enviada junto com a mensagem no WhatsApp.</small>
-
-        <div class="grid-2">
-          <div class="field">
-            <label for="comodatoMarca">Marca do Aparelho Emprestado</label>
-            <input type="text" id="comodatoMarca" autocomplete="off" placeholder="Ex.: Samsung">
-          </div>
-          <div class="field">
-            <label for="comodatoModelo">Modelo</label>
-            <input type="text" id="comodatoModelo" autocomplete="off" placeholder="Ex.: Galaxy A10">
-          </div>
-        </div>
-        <div class="grid-2">
-          <div class="field">
-            <label for="comodatoCor">Cor</label>
-            <input type="text" id="comodatoCor" autocomplete="off" placeholder="Ex.: Preto">
-          </div>
-          <div class="field">
-            <label for="comodatoIMEI">IMEI / Nº de Série</label>
-            <input type="text" id="comodatoIMEI" autocomplete="off" placeholder="Ex.: 123456789012345">
-          </div>
-        </div>
-        <div class="field">
-          <label for="comodatoObservacao">Observações / Estado do Aparelho</label>
-          <input type="text" id="comodatoObservacao" autocomplete="off" placeholder="Ex.: Tela trincada no canto, bateria viciada">
-        </div>
-        <div class="field">
-          <label for="comodatoFoto">Foto do Aparelho Emprestado</label>
-          <input type="file" id="comodatoFoto" accept="image/*" capture="environment">
-        </div>
-        <label class="checkbox-row" style="font-size:0.85rem;">
-          <input type="checkbox" id="chkSemDisponibilidade" onchange="atualizarCamposComodato()">
-          <span>Sem disponibilidade de aparelho reserva no momento</span>
-        </label>
-      </div>
-
       <div id="areaDiagnostico" class="hidden" style="margin-top:20px;">
-        <h2 id="tituloDiagnostico" style="border-top:1px solid var(--border);padding-top:14px;color:#fff;">Relatório de Diagnóstico</h2>
+        <h2 id="tituloDiagnostico" style="border-top:1px solid var(--border);padding-top:14px;color:#fff;">Laudo Preliminar</h2>
         <div id="conteudoDiagnostico"></div>
       </div>
 
-      <!-- Resultado do Orçamento / Status do Reparo -->
+      <!-- Resultado do Orçamento -->
       <fieldset class="field" id="statusReparoField" style="margin-top:16px;border-top:1px solid var(--border);padding-top:14px;">
-        <legend>Resultado do Orçamento / Reparo *</legend>
+        <legend>Resultado do Diagnóstico *</legend>
         <div class="radio-group">
           <label class="radio-pill option-positive">
-            <input type="radio" name="statusReparo" value="Aprovado" onchange="atualizarStatusReparo()">
-            Aprovado
+            <input type="radio" name="statusReparo" value="Aprovado" onchange="atualizarStatusReparo()"> Aprovado (Reparar)
           </label>
           <label class="radio-pill option-negative">
-            <input type="radio" name="statusReparo" value="Reprovado" onchange="atualizarStatusReparo()">
-            Reprovado / Não Autorizado
+            <input type="radio" name="statusReparo" value="Reprovado" onchange="atualizarStatusReparo()"> Reprovado (Não Autorizado)
           </label>
           <label class="radio-pill option-indecisive">
-            <input type="radio" name="statusReparo" value="Pendente" onchange="atualizarStatusReparo()">
-            Pendente
+            <input type="radio" name="statusReparo" value="Pendente" onchange="atualizarStatusReparo()"> Pendente (Aguardando Cliente)
           </label>
         </div>
       </fieldset>
     </div>
 
-    <!-- Bloco de Agendamento de Entrega / Retirada -->
-    <div class="card hidden" id="blocoAgendamento">
-      <h2>Agendamento de Entrega / Retirada</h2>
-
-      <!-- Aviso de taxas quando o reparo for reprovado -->
-      <div id="avisoTaxasReprovacao" class="aviso-taxas hidden">
-        <strong>⚠️ Atenção: Reparo Não Autorizado</strong>
-        <p style="margin:8px 0 0;">Conforme os Termos de Serviço aceitos digitalmente pelo cliente (Cláusula 4), serão cobradas as seguintes taxas:</p>
-        <ul>
-          <li><strong>Taxa de Diagnóstico: R$ 50,00</strong> — Cláusula 2.1</li>
-          <li><strong>Taxa de Deslocamento: R$ 1,00/km</strong> — Cláusula 2.8 (se aplicável)</li>
-        </ul>
-        <p style="margin:8px 0 0;font-size:0.82rem;opacity:0.85;">O aceite digital dos termos já cobre essas cobranças. Nenhum valor será reembolsado pelas taxas de diagnóstico.</p>
-      </div>
-
-      <div class="field">
-        <label for="tipoEntregaFinal">Como o cliente vai receber o aparelho? *</label>
-        <select id="tipoEntregaFinal" onchange="atualizarCamposEntregaFinal()">
-          <option value="">Selecione uma opção</option>
-          <option value="Retirada na loja">Retirada na loja</option>
-          <option value="Tele-busca e Entrega">Tele-busca e Entrega</option>
-        </select>
-      </div>
-
-      <div id="camposEntregaFinal" class="hidden">
-        <div class="field">
-          <label for="enderecoEntregaFinal">Endereço Completo (Rua, Nº, Bairro, Cidade) *</label>
-          <input type="text" id="enderecoEntregaFinal" autocomplete="off" placeholder="Ex.: Rua das Flores, 123, Centro">
-        </div>
-        <div class="field">
-          <label for="pontoReferenciaFinal">Ponto de Referência</label>
-          <input type="text" id="pontoReferenciaFinal" autocomplete="off" placeholder="Ex.: Próximo à padaria X">
-        </div>
-        <div class="field">
-          <label for="linkLocalizacaoFinal">Link da Localização (Google Maps)</label>
-          <input type="text" id="linkLocalizacaoFinal" autocomplete="off" placeholder="Cole o link do Google Maps aqui">
-        </div>
-      </div>
-
-      <div class="field">
-        <label for="dataHoraAgendamento">Data e Horário Agendado *</label>
-        <input type="text" id="dataHoraAgendamento" autocomplete="off" placeholder="Ex.: Segunda-feira, às 14h">
-      </div>
-    </div>
-
+    <!-- ABA 3: FINANCEIRO -->
     <div class="card hidden" id="blocoOS">
-      <h2>Peças e Serviços da Ordem de Serviço</h2>
+      <h2>3. Orçamento e Financeiro</h2>
+
+      <div id="avisoReprovado" class="aviso-taxas hidden">
+        <strong>⚠️ Reparo Não Autorizado</strong>
+        <p style="margin:8px 0 0;">Cobre as taxas abaixo antes de finalizar a OS:</p>
+        <ul>
+          <li><strong>Taxa de Diagnóstico: R$ 50,00</strong></li>
+          <li><strong>Taxa de Deslocamento: R$ 1,00/km</strong> (se aplicável)</li>
+        </ul>
+      </div>
+
       <div class="registro-grid">
         <div class="field">
           <label for="categoriaRegistro">Categoria *</label>
@@ -592,34 +445,33 @@
           </select>
         </div>
         <div class="field">
-          <label for="quantidadeRegistro">Quantidade *</label>
+          <label for="quantidadeRegistro">Qtd. *</label>
           <input type="text" id="quantidadeRegistro" inputmode="numeric" pattern="[0-9]+" value="1" maxlength="6">
         </div>
         <div class="field registro-descricao">
-          <label for="descricaoRegistro">Descrição da peça/serviço *</label>
-          <input type="text" id="descricaoRegistro" autocomplete="off" placeholder="Ex.: Troca de tela, diagnóstico técnico">
+          <label for="descricaoRegistro">Descrição *</label>
+          <input type="text" id="descricaoRegistro" autocomplete="off" placeholder="Ex.: Troca de tela">
         </div>
         <div class="field">
-          <label for="valorRegistro">Valor unitário *</label>
+          <label for="valorRegistro">Valor Unitário *</label>
           <input type="text" id="valorRegistro" inputmode="decimal" placeholder="0,00" maxlength="12">
         </div>
         <div class="field">
           <label aria-hidden="true">&nbsp;</label>
-          <button type="button" class="btn-adicionar" onclick="adicionarRegistroOS()">Adicionar registro</button>
+          <button type="button" class="btn-adicionar" onclick="adicionarRegistroOS()">Adicionar</button>
         </div>
       </div>
 
       <div class="field" style="margin-top: 10px; background: #27272a; padding: 12px; border-radius: 6px;">
-        <label>Taxas Adicionais (Opcional)</label>
+        <label>Taxas Adicionais</label>
         <label class="checkbox-row" style="font-size: 0.85rem; margin-bottom: 8px;">
           <input type="checkbox" id="chkTaxaDeslocamento" onchange="toggleTaxaDeslocamento()">
           <span>Taxa de Deslocamento (R$ 1,00/km)</span>
         </label>
         <div class="field hidden" id="campoDistanciaDeslocamento" style="margin-left: 28px; margin-bottom: 8px;">
-          <label for="inputDistancia" style="font-size: 0.8rem;">Distância total (km) *</label>
+          <label for="inputDistancia" style="font-size: 0.8rem;">Distância (km) *</label>
           <input type="number" id="inputDistancia" value="1" min="1" step="1" oninput="atualizarTaxaDeslocamento()" style="padding: 6px;">
         </div>
-
         <label class="checkbox-row" style="font-size: 0.85rem;">
           <input type="checkbox" id="chkTaxaDiagnostico" onchange="adicionarTaxaDiagnostico()">
           <span>Taxa de Diagnóstico (R$ 50,00)</span>
@@ -641,7 +493,7 @@
       <h2 style="margin-top:18px;">Forma de Pagamento</h2>
       <div class="registro-grid">
         <div class="field">
-          <label for="formaPagamento">Forma de pagamento *</label>
+          <label for="formaPagamento">Forma *</label>
           <select id="formaPagamento" required>
             <option value="" selected disabled>Selecione</option>
             <option value="Dinheiro">Dinheiro</option>
@@ -654,25 +506,106 @@
           <select id="parcelasCartao"></select>
         </div>
         <div class="field registro-descricao hidden" id="campoTaxaCartao">
-          <label for="taxaCartao">Taxa total da maquininha (%) *</label>
+          <label for="taxaCartao">Taxa da Maquininha (%) *</label>
           <input type="text" id="taxaCartao" inputmode="decimal" placeholder="Ex.: 12,5" maxlength="6">
-          <small class="field-note">Taxa calculada automaticamente com base nas parcelas. Pode ser ajustada se necessário.</small>
         </div>
+      </div>
+
+      <div class="field hidden" id="campoDinheiro">
+        <label>Precisa de troco?</label>
+        <select id="precisaTroco" onchange="toggleTroco()">
+          <option value="Não">Não (Valor exato)</option>
+          <option value="Sim">Sim</option>
+        </select>
+        <div class="field hidden" id="campoValorTroco" style="margin-top: 8px;">
+          <label for="valorTroco">Troco para quanto? *</label>
+          <input type="text" id="valorTroco" inputmode="decimal" placeholder="Ex.: 100,00" maxlength="12">
+        </div>
+      </div>
+
+      <div id="avisoPix" class="field-note hidden" style="margin-top: 10px; background: #1e3a8a; border: 1px solid #3b82f6; padding: 12px; border-radius: 6px; color: #dbeafe;">
+        🔑 <strong>Chave PIX (Celular):</strong> +55 51 99737 1944
       </div>
 
       <div class="resumo-registros">
         <div><span>Forma de pagamento</span><strong id="resumoFormaPagamento">—</strong></div>
         <div id="linhaParcelas" class="hidden"><span>Parcelas</span><strong id="resumoParcelas">—</strong></div>
-        <div id="linhaAcrescimo" class="hidden"><span>Acréscimo da maquininha</span><strong id="resumoAcrescimo">R$ 0,00</strong></div>
+        <div id="linhaAcrescimo" class="hidden"><span>Acréscimo</span><strong id="resumoAcrescimo">R$ 0,00</strong></div>
+        <div id="linhaTroco" class="hidden"><span>Troco para</span><strong id="resumoTroco">—</strong></div>
         <div class="total-geral"><span>Total a pagar</span><strong id="totalComPagamento">R$ 0,00</strong></div>
+      </div>
+
+      <!-- Botão para Liberar Checkout -->
+      <div style="margin-top: 20px; border-top: 1px solid var(--border); padding-top: 16px;">
+        <button type="button" class="btn-action" id="btnAprovarFinanceiro" onclick="aprovarFinanceiro()" disabled>
+          ✅ Aprovar Orçamento e Liberar Checkout
+        </button>
+        <small class="field-note" style="text-align: center; margin-top: 8px;">O Checkout só é liberado após a aprovação financeira.</small>
       </div>
     </div>
 
+    <!-- ABA 4: CHECKOUT DE SAÍDA -->
+    <div class="card hidden" id="blocoCheckout">
+      <h2>4. Checkout de Saída (Entrega)</h2>
+      
+      <div class="laudo-tecnico">
+        <strong>Laudo de Entrega:</strong> O aparelho foi testado e está pronto para entrega. Certifique-se de recolher o aparelho reserva (se aplicável) e conferir as condições estéticas.
+      </div>
+
+      <div id="areaRecolherComodato" class="field hidden" style="background: #450a0a; border: 1px solid #7f1d1d; padding: 12px; border-radius: 8px; margin-bottom: 16px;">
+        <strong style="color: #fca5a5;">⚠️ Recolhimento de Comodato</strong>
+        <p style="font-size: 0.85rem; color: #fee2e2; margin-top: 4px;">O cliente utilizou aparelho reserva. Confirme o recolhimento nas mesmas condições.</p>
+        <label class="checkbox-row" style="margin-top: 8px;">
+          <input type="checkbox" id="chkComodatoRecolhido" required>
+          <span>Aparelho reserva recolhido em perfeito estado.</span>
+        </label>
+      </div>
+
+      <div class="field" id="fotosSaida">
+        <label>Fotos de Saída * (7 fotos)</label>
+        <div class="grid-2">
+          <div><label for="fotoSaida1">Foto 1</label><input type="file" id="fotoSaida1" accept="image/*"></div>
+          <div><label for="fotoSaida2">Foto 2</label><input type="file" id="fotoSaida2" accept="image/*"></div>
+          <div><label for="fotoSaida3">Foto 3</label><input type="file" id="fotoSaida3" accept="image/*"></div>
+          <div><label for="fotoSaida4">Foto 4</label><input type="file" id="fotoSaida4" accept="image/*"></div>
+          <div><label for="fotoSaida5">Foto 5</label><input type="file" id="fotoSaida5" accept="image/*"></div>
+          <div><label for="fotoSaida6">Foto 6</label><input type="file" id="fotoSaida6" accept="image/*"></div>
+          <div><label for="fotoSaida7">Foto 7 (IMEI)</label><input type="file" id="fotoSaida7" accept="image/*"></div>
+        </div>
+      </div>
+
+      <div id="areaChecklistSaida">
+        <button type="button" class="btn-Quick ok" onclick="marcarTodosOK(); atualizarEstadoEnvio();">Marcar Todos "OK"</button>
+        <div id="listaHardwareSaida"></div>
+      </div>
+
+      <div class="field" style="margin-top: 16px;">
+        <label for="tipoEntregaFinal">Como o cliente vai receber o aparelho? *</label>
+        <select id="tipoEntregaFinal" onchange="atualizarCamposEntregaFinal()">
+          <option value="">Selecione</option>
+          <option value="Retirada na loja">Retirada na loja</option>
+          <option value="Tele-busca e Entrega">Tele-busca e Entrega (Devolução)</option>
+        </select>
+      </div>
+
+      <div id="camposEntregaFinal" class="hidden">
+        <div class="field">
+          <label for="enderecoEntregaFinal">Endereço de Entrega *</label>
+          <input type="text" id="enderecoEntregaFinal" autocomplete="off" placeholder="Rua, Nº, Bairro, Cidade">
+        </div>
+        <div class="field">
+          <label for="dataHoraAgendamento">Data e Horário da Entrega *</label>
+          <input type="text" id="dataHoraAgendamento" autocomplete="off" placeholder="Ex.: Segunda-feira, às 14h">
+        </div>
+      </div>
+    </div>
+
+    <!-- TERMOS -->
     <div class="card" id="blocoTermos">
-      <h2>Termos de Serviço e Garantia F5TEC</h2>
+      <h2>Termos de Serviço e Garantia</h2>
       <div class="terms-box">
         <div style="text-align: center; font-size: 0.9rem; font-weight: bold; margin-bottom: 15px; color: #fff;">
-          ⚖️ TERMOS DE SERVIÇO E GARANTIA - F5TEC Assistência Técnica & Atualização Tecnológica ⚖️
+          ⚖️ TERMOS DE SERVIÇO E GARANTIA - F5TEC ⚖️
         </div>
         <p>Pedimos que leia com atenção nossas políticas de atendimento:</p>
         <strong>📝 2 CONDIÇÕES GERAIS DE SERVIÇO</strong><br><br>
@@ -720,7 +653,7 @@
       <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
         <path d="M13.601 2.326A7.85 7.85 0 0 0 7.994.004C3.627.004.074 3.557.072 7.924c0 1.393.364 2.75 1.057 3.945L.001 16l4.235-1.11a7.94 7.94 0 0 0 3.8.968h.003c4.367 0 7.92-3.553 7.922-7.92a7.87 7.87 0 0 0-2.36-5.612zM8.04 14.52h-.003a6.6 6.6 0 0 1-3.35-.91l-.24-.144-2.51.658.67-2.448-.156-.252a6.6 6.6 0 0 1-1.01-3.5c0-3.64 2.96-6.6 6.607-6.6a6.56 6.56 0 0 1 4.666 1.935 6.56 6.56 0 0 1 1.93 4.67c-.002 3.64-2.962 6.6-6.603 6.6zm3.62-4.943c-.198-.1-1.17-.577-1.35-.643-.18-.067-.312-.1-.443.1-.132.198-.509.643-.623.775-.115.132-.23.148-.427.05-.198-.1-.835-.308-1.59-.98-.588-.524-.985-1.17-1.1-1.368-.115-.198-.012-.305.086-.403.089-.09.198-.23.297-.345.1-.115.132-.198.198-.33.066-.132.033-.247-.017-.346-.05-.1-.444-1.07-.608-1.466-.16-.385-.323-.333-.444-.339l-.378-.007c-.132 0-.346.05-.526.247-.18.198-.69.675-.69 1.647s.707 1.91.806 2.042c.099.132 1.392 2.125 3.37 2.981.47.203.84.324 1.128.414.474.151.905.13 1.245.079.38-.057 1.17-.478 1.334-.94.165-.462.165-.857.115-.94-.05-.083-.181-.132-.378-.23z"/>
       </svg>
-      <span id="textoBotaoEnvio" aria-live="polite">Enviar Dados para o WhatsApp da F5TEC</span>
+      <span id="textoBotaoEnvio" aria-live="polite">Enviar Dados para o WhatsApp</span>
     </button>
   </form>
 
@@ -734,14 +667,34 @@
   const SENHA_ABAS_PROTEGIDAS = "0101";
   const URL_BASE_OFICIAL = "https://angelog2r.github.io/f5tecat_os_chekin_cheklist_checkout/";
 
+  const TERMOS_WHATSAPP = `
+⚖️ TERMOS DE SERVIÇO E GARANTIA - F5TEC ⚖️
+*2 CONDIÇÕES GERAIS DE SERVIÇO*
+2.1 Pré-Orçamento: Qualquer valor antes da análise é estimado. O orçamento oficial só sai após análise completa. Se não aprovado, cobra-se a taxa de diagnóstico.
+2.2 Prazos e Abandono: Retirada em até 30 dias (acréscimo de 10%/mês após). Não retirada em 90 dias implica em venda por abandono (Cód. Civil Art. 1.263).
+2.3 Dados e Senhas: Não nos responsabilizamos por perda de dados. Formatação apaga tudo. O cliente deve desativar bloqueios (iCloud/Google) e fornecer senha.
+2.4 Placa Lógica: Reparos em placa podem causar "morte súbita" do aparelho.
+2.5 Estética: Aparelhos podem descascar tinta ao abrir. A F5TEC é imune ao prejuízo estético.
+2.6 Líquidos: Aparelhos molhados podem ter falhas secundárias ocultas.
+2.7 Acessórios: Não nos responsabilizamos por capas, películas, chips ou cartões.
+2.8 Logística: Coleta/entrega é isenta se aprovado o reparo. Se reprovado, cobra-se deslocamento (R$1/km).
+2.9 Comodato: Aparelho reserva deve ser devolvido nas mesmas condições. Danos são de responsabilidade do cliente.
+*3 TERMO DE GARANTIA*
+3.1 Cobertura: 90 dias (Art. 26 CDC), cobrindo apenas a peça/serviço descrito.
+3.2 Perda de Garantia: Quedas, trincados, umidade, violação de lacre, conserto por terceiros ou instalação de apps maliciosos.
+3.3 Observações: Abertura anula resistência à água. Garantia não cobre software/limpeza. Prazo de análise de garantia: 7 dias úteis.
+*4 ACEITE LEGAL*
+O envio digital e pagamento/retirada constituem ACEITE DIGITAL irrevogável de todas as condições, substituindo assinatura física.
+`;
+
   let modoAtual = "cliente";
   let abasProtegidasDesbloqueadas = false;
   let modoProtegidoPendente = null;
   let sequenciaPadrao = [];
   let inspecaoEntradaConcluida = false;
-  let checklistEstavaLiberado = false;
   let validacaoIniciada = false;
-  const marcacaoAutomaticaPorEtapa = { ENTRADA: false, "SAÍDA": false };
+  let financeiroAprovado = false;
+  const marcacaoAutomaticaPorEtapa = { ENTRADA: false, SAIDA: false };
 
   const TAXAS_PARCELAMENTO = {
     1: 3.08, 2: 10.74, 3: 12.09, 4: 12.45, 5: 14.76,
@@ -752,13 +705,13 @@
 
   const itensTriagem = [
     { id: "caiu", label: "Caiu?", opcoes: ["Sim", "Não", "Não sei"] },
-    { id: "molhou", label: "Molhou / Teve contato com líquido?", opcoes: ["Sim", "Não", "Não sei"] },
+    { id: "molhou", label: "Molhou?", opcoes: ["Sim", "Não", "Não sei"] },
     { id: "liga", label: "Liga?", opcoes: ["Sim", "Não", "Reiniciando"] },
     { id: "travado", label: "Travado?", opcoes: ["Sim", "Não"] },
     { id: "carrega", label: "Carrega?", opcoes: ["Sim", "Não"] },
-    { id: "assistencia", label: "Já foi pra alguma assistência?", opcoes: ["Sim", "Não"] },
+    { id: "assistencia", label: "Já foi pra assistência?", opcoes: ["Sim", "Não"] },
     { id: "backup", label: "Backup dos dados?", opcoes: ["Sim", "Não"] },
-    { id: "comodato", label: "Precisa de Aparelho Reserva (Comodato)?", opcoes: ["Sim (Sujeito a disponibilidade)", "Não"] }
+    { id: "comodato", label: "Precisa de Aparelho Reserva?", opcoes: ["Sim (Sujeito a disponibilidade)", "Não"] }
   ];
 
   const itensHardware = [
@@ -781,41 +734,43 @@
     return registrosOS.filter(r => r.categoria === cat).reduce((t, r) => t + (r.quantidade * r.valor), 0);
   }
 
-  /* =============== COMODATO (somente preenchimento pelo técnico) =============== */
+  /* =============== COMODATO =============== */
   function atualizarCamposComodato() {
-    const sim = obterValorRadio("comodato") === "Sim (Sujeito a disponibilidade)";
-    const ehTecnico = modoAtual === "tecnico";
-    const areaVisivel = sim && ehTecnico;
-    document.getElementById("areaComodato").classList.toggle("hidden", !areaVisivel);
-    document.getElementById("avisoComodatoCliente").classList.toggle("hidden", !sim || ehTecnico);
-    // Desabilita os campos quando marcado "sem disponibilidade"
-    const semDisp = document.getElementById("chkSemDisponibilidade").checked;
-    ["comodatoMarca","comodatoModelo","comodatoCor","comodatoIMEI","comodatoObservacao","comodatoFoto"].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.disabled = !areaVisivel || semDisp;
-    });
+    const simCliente = obterValorRadio("comodato") === "Sim (Sujeito a disponibilidade)";
+    const temDisp = obterValorRadio("disponibilidadeComodato") === "Sim";
+    
+    document.getElementById("areaComodato").classList.toggle("hidden", !simCliente || modoAtual !== "tecnico");
+    document.getElementById("avisoComodatoCliente").classList.toggle("hidden", !simCliente || modoAtual === "tecnico");
+    
+    if (simCliente && modoAtual === "tecnico") {
+      document.getElementById("camposComodato").classList.toggle("hidden", !temDisp);
+      const ids = ["comodatoMarca","comodatoModelo","comodatoObservacao","comodatoFotoFrente","comodatoFotoVerso","comodatoFotoIMEI"];
+      ids.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.required = temDisp;
+      });
+    }
   }
 
-  /* =============== STATUS DO REPARO / AGENDAMENTO =============== */
+  /* =============== AGENDAMENTO E FLUXO =============== */
   function atualizarStatusReparo() {
-    if (modoAtual !== "tecnico") {
-      document.getElementById("blocoAgendamento").classList.add("hidden");
-      return;
-    }
+    if (modoAtual !== "tecnico") return;
     const status = obterValorRadio("statusReparo");
-    const estagio = document.getElementById("estagioChecklist").value;
-    const ehSaida = estagio === "SAÍDA";
-    const ehReprovado = status === "Reprovado";
-    const mostrar = ehSaida || ehReprovado;
-
-    document.getElementById("blocoAgendamento").classList.toggle("hidden", !mostrar);
-    document.getElementById("avisoTaxasReprovacao").classList.toggle("hidden", !ehReprovado);
-
-    // Campos obrigatórios somente quando o bloco está visível
-    document.getElementById("tipoEntregaFinal").required = mostrar;
-    document.getElementById("dataHoraAgendamento").required = mostrar;
-
-    atualizarCamposEntregaFinal();
+    
+    if (status === "Aprovado" || status === "Reprovado") {
+      document.getElementById("btnModoOS").disabled = false;
+    } else {
+      document.getElementById("btnModoOS").disabled = true;
+    }
+    
+    if (status === "Reprovado") {
+      document.getElementById("avisoReprovado").classList.remove("hidden");
+      document.getElementById("chkTaxaDiagnostico").checked = true;
+      adicionarTaxaDiagnostico();
+    } else {
+      document.getElementById("avisoReprovado").classList.add("hidden");
+    }
+    atualizarEstadoEnvio();
   }
 
   function atualizarCamposEntregaFinal() {
@@ -823,6 +778,21 @@
     const mostra = tipo === "Tele-busca e Entrega";
     document.getElementById("camposEntregaFinal").classList.toggle("hidden", !mostra);
     document.getElementById("enderecoEntregaFinal").required = mostra;
+    document.getElementById("dataHoraAgendamento").required = mostra;
+  }
+
+  function aprovarFinanceiro() {
+    if (!document.getElementById("formOS").checkValidity() && modoAtual === "os") {
+      alert("Preencha todos os campos do financeiro (Forma de Pagamento, etc.) antes de aprovar.");
+      return;
+    }
+    financeiroAprovado = true;
+    document.getElementById("btnModoCheckout").disabled = false;
+    document.getElementById("btnAprovarFinanceiro").textContent = "✅ Orçamento Aprovado (Checkout Liberado)";
+    document.getElementById("btnAprovarFinanceiro").style.background = "#15803d";
+    
+    // Auto-switch para Checkout
+    alternarModo("checkout", true);
   }
 
   /* =============== ENCURTADOR DE URL =============== */
@@ -833,9 +803,7 @@
         const data = await response.json();
         if (data.shorturl) return data.shorturl;
       }
-    } catch (e) {
-      console.warn("Erro ao encurtar URL:", e);
-    }
+    } catch (e) { console.warn("Erro ao encurtar URL:", e); }
     return url;
   }
 
@@ -868,27 +836,58 @@
       totalFinal = t > 0 ? total * (1 + t / 100) : total;
       acrescimo = totalFinal - total;
     }
-    return { forma, total, parcelas, taxa: taxaValida ? taxa : 0, taxaValida, acrescimo, totalFinal, valorParcela: totalFinal / parcelas };
+    
+    const precisaTroco = document.getElementById("precisaTroco").value === "Sim";
+    const valorTroco = document.getElementById("valorTroco").value;
+
+    return { forma, total, parcelas, taxa: taxaValida ? taxa : 0, taxaValida, acrescimo, totalFinal, valorParcela: totalFinal / parcelas, precisaTroco, valorTroco };
   }
   function renderizarPagamento() {
     const d = obterDadosPagamento();
     document.getElementById("resumoFormaPagamento").textContent = d.forma || "Não informada";
     const ehCartao = d.forma === "Cartão de Crédito";
+    const ehDinheiro = d.forma === "Dinheiro";
+    
     document.getElementById("linhaParcelas").classList.toggle("hidden", !ehCartao);
     document.getElementById("linhaAcrescimo").classList.toggle("hidden", !ehCartao);
+    document.getElementById("linhaTroco").classList.toggle("hidden", !ehDinheiro || !d.precisaTroco);
+    
     if (ehCartao) {
       document.getElementById("resumoParcelas").textContent = `${d.parcelas}x de ${formatarMoeda(d.valorParcela)}`;
       document.getElementById("resumoAcrescimo").textContent = d.taxaValida
         ? `${formatarPercentual(d.taxa)}% (${formatarMoeda(d.acrescimo)})` : "Informe a taxa";
     }
+    if (ehDinheiro && d.precisaTroco) {
+        document.getElementById("resumoTroco").textContent = d.valorTroco ? `R$ ${d.valorTroco}` : "Informe o valor";
+    }
     document.getElementById("totalComPagamento").textContent = formatarMoeda(d.totalFinal);
+    
+    const btnAprovar = document.getElementById("btnAprovarFinanceiro");
+    if (d.total > 0 && d.forma) {
+      btnAprovar.disabled = false;
+    } else {
+      btnAprovar.disabled = true;
+    }
+  }
+  function toggleTroco() {
+    const precisa = document.getElementById("precisaTroco").value === "Sim";
+    document.getElementById("campoValorTroco").classList.toggle("hidden", !precisa);
+    document.getElementById("valorTroco").required = precisa;
+    renderizarPagamento();
   }
   function atualizarCamposPagamento() {
     const ativo = modoAtual === "os";
-    const ehCartao = ativo && document.getElementById("formaPagamento").value === "Cartão de Crédito";
+    const forma = document.getElementById("formaPagamento").value;
+    const ehCartao = ativo && forma === "Cartão de Crédito";
+    const ehPix = ativo && forma === "PIX";
+    const ehDinheiro = ativo && forma === "Dinheiro";
+
     document.getElementById("formaPagamento").disabled = !ativo;
     document.getElementById("campoParcelas").classList.toggle("hidden", !ehCartao);
     document.getElementById("campoTaxaCartao").classList.toggle("hidden", !ehCartao);
+    document.getElementById("avisoPix").classList.toggle("hidden", !ehPix);
+    document.getElementById("campoDinheiro").classList.toggle("hidden", !ehDinheiro);
+
     document.getElementById("parcelasCartao").disabled = !ehCartao;
     document.getElementById("taxaCartao").disabled = !ehCartao;
     document.getElementById("parcelasCartao").required = ehCartao;
@@ -905,6 +904,10 @@
       r += `• Parcelas: ${d.parcelas}x de ${formatarMoeda(d.valorParcela)}\n`;
       r += `• Taxa da maquininha: ${formatarPercentual(d.taxa)}% (total)\n`;
       r += `• Acréscimo repassado: ${formatarMoeda(d.acrescimo)}\n`;
+    } else if (d.forma === "PIX") {
+      r += `• Chave PIX (Celular): +55 51 99737 1944\n`;
+    } else if (d.forma === "Dinheiro") {
+        r += `• Troco: ${d.precisaTroco ? `Sim, para R$ ${d.valorTroco}` : "Não (Valor exato)"}\n`;
     }
     r += `• *Total a pagar: ${formatarMoeda(d.totalFinal)}*`;
     return r;
@@ -918,7 +921,7 @@
     const desc = document.createElement("strong");
     desc.textContent = r.descricao;
     const qtd = document.createElement("small");
-    qtd.textContent = `Quantidade: ${r.quantidade} × ${formatarMoeda(r.valor)}`;
+    qtd.textContent = `Qtd: ${r.quantidade} × ${formatarMoeda(r.valor)}`;
     det.appendChild(desc); det.appendChild(document.createElement("br")); det.appendChild(qtd);
     const dir = document.createElement("div");
     dir.style.textAlign = "right";
@@ -1034,11 +1037,13 @@
   }
 
   /* =============== TRIAGEM/CHECKLIST =============== */
-  function criarGrupoOpcoes(contId, lista, opcoesPadrao) {
+  function criarGrupoOpcoes(contId, lista, opcoesPadrao, prefixo) {
     const cont = document.getElementById(contId);
+    if(!cont) return;
+    cont.replaceChildren();
     lista.forEach((item, idx) => {
       const nome = typeof item === "string" ? item : item.label;
-      const chave = typeof item === "string" ? "hw_" + idx : item.id;
+      const chave = typeof item === "string" ? prefixo + idx : item.id;
       const ops = typeof item === "string" ? opcoesPadrao : item.opcoes;
       const fs = document.createElement("fieldset");
       fs.className = "field";
@@ -1065,8 +1070,9 @@
       });
     });
   }
-  criarGrupoOpcoes("perguntasTriagem", itensTriagem, []);
-  criarGrupoOpcoes("listaHardware", itensHardware, ["OK", "Defeito", "Não Testado"]);
+  criarGrupoOpcoes("perguntasTriagem", itensTriagem, [], "");
+  criarGrupoOpcoes("listaHardware", itensHardware, ["OK", "Defeito", "Não Testado"], "hw_");
+  criarGrupoOpcoes("listaHardwareSaida", itensHardware, ["OK", "Defeito", "Não Testado"], "out_");
 
   function atualizarCampoAcessorios() {
     const sim = document.getElementById("possuiAcessorios").value === "Sim";
@@ -1090,7 +1096,10 @@
 
   function atualizarIndicadoresPendencia(mostrar) {
     const pend = [];
-    const sel = modoAtual === "os" ? "#blocoDadosOS .field, #blocoOS .field" : "#formOS .field, #formOS .checkbox-row";
+    const sel = modoAtual === "os" ? "#blocoDadosOS .field, #blocoOS .field" : 
+                modoAtual === "checkout" ? "#blocoCheckout .field, #blocoCheckout .checkbox-row" :
+                "#formOS .field, #formOS .checkbox-row";
+                
     document.querySelectorAll(sel).forEach(c => {
       const vis = c.getClientRects().length > 0;
       if (!vis) {
@@ -1102,7 +1111,7 @@
       const rd = c.querySelectorAll('input[type="radio"]');
       if (rd.length) {
         const sem = !c.querySelector('input[type="radio"]:checked');
-        if (sem && c.id !== "statusReparoField") p = true;
+        if (sem && c.id !== "statusReparoField" && c.id !== "disponibilidadeComodato") p = true;
         rd.forEach(r => { if (mostrar && sem) r.setAttribute("aria-invalid", "true"); else r.removeAttribute("aria-invalid"); });
       }
       c.querySelectorAll('input:not([type="radio"]), select, textarea').forEach(ctrl => {
@@ -1135,6 +1144,11 @@
     const c = itensHardware.every((_, i) => document.querySelector(`input[name="hw_${i}"]:checked`));
     return f && c;
   }
+  function calcularSaidaConcluida() {
+    const f = fotosSaidaIds.every(id => document.getElementById(id).files.length > 0);
+    const c = itensHardware.every((_, i) => document.querySelector(`input[name="out_${i}"]:checked`));
+    return f && c;
+  }
 
   /* =============== RELATÓRIO DE DIAGNÓSTICO =============== */
   function gerarRelatorioDiagnostico() {
@@ -1152,17 +1166,16 @@
     const cont = document.getElementById("conteudoDiagnostico");
     if (!area || !cont) return;
     if (modoAtual !== "tecnico") { area.classList.add("hidden"); return; }
-    const estagio = document.getElementById("estagioChecklist").value;
     const { defeitos, naoTestados, ok } = gerarRelatorioDiagnostico();
     const total = defeitos.length + naoTestados.length + ok.length;
     if (total === 0) { area.classList.add("hidden"); return; }
     area.classList.remove("hidden");
-    document.getElementById("tituloDiagnostico").textContent = `Relatório de Diagnóstico — ${estagio}`;
+    document.getElementById("tituloDiagnostico").textContent = `Laudo Preliminar`;
     
     let html = `
       <div class="laudo-tecnico">
         <strong>Laudo Técnico Preliminar:</strong><br>
-        O dispositivo passou por avaliação em nossa bancada especializada. Foram realizados testes minuciosos de hardware e software conforme o checklist abaixo. Ressaltamos que qualquer intervenção interna pode acarretar riscos adicionais conforme os termos de garantia.
+        O dispositivo passou por avaliação em nossa bancada especializada. Foram realizados testes minuciosos de hardware e software conforme o checklist abaixo.
       </div>
     `;
 
@@ -1180,54 +1193,54 @@
         <ul style="margin:0;padding-left:20px;color:#fbbf24;font-size:0.9rem;">${naoTestados.map(d => `<li>${d}</li>`).join("")}</ul>
       </div>`;
     }
-    if (ok.length > 0) {
-      html += `<div style="background:#172554;border:1px solid #1e3a8a;border-radius:8px;padding:12px;">
-        <strong style="color:#93c5fd;display:block;margin-bottom:6px;">Itens OK (${ok.length} de ${itensHardware.length}):</strong>
-        <div style="color:#bfdbfe;font-size:0.85rem;">${ok.join(", ")}</div>
-      </div>`;
-    }
     cont.innerHTML = html;
   }
 
   function atualizarEstadoEnvio() {
-    const estagio = document.getElementById("estagioChecklist").value;
-    document.getElementById("fotosEntrada").classList.toggle("hidden", estagio !== "ENTRADA");
-    document.getElementById("fotosSaida").classList.toggle("hidden", estagio !== "SAÍDA");
-    
-    const idsAtuais = estagio === "ENTRADA" ? fotosEntradaIds : fotosSaidaIds;
-    const fotosOk = idsAtuais.every(id => document.getElementById(id).files.length > 0);
-    
-    fotosEntradaIds.forEach(id => { document.getElementById(id).required = modoAtual === "tecnico" && estagio === "ENTRADA"; });
-    fotosSaidaIds.forEach(id => { document.getElementById(id).required = modoAtual === "tecnico" && estagio === "SAÍDA"; });
-    
-    if (modoAtual === "tecnico" && obterValorRadio("liga") === "Não" && !marcacaoAutomaticaPorEtapa[estagio]) {
-      marcacaoAutomaticaPorEtapa[estagio] = true;
-      marcarTodosNaoTestados();
+    if (modoAtual === "cliente") {
+      const triagemOk = itensTriagem.every(i => document.querySelector(`input[name="${i.id}"]:checked`));
+      const pronto = document.getElementById("formOS").checkValidity() && triagemOk;
+      document.querySelector(".btn-submit").classList.toggle("awaiting-completion", !pronto);
+      document.getElementById("textoBotaoEnvio").textContent = pronto ? "Enviar Cadastro para a Assistência" : "Verificar Preenchimento do Cadastro";
+      return pronto;
     }
-    const triagemOk = itensTriagem.every(i => document.querySelector(`input[name="${i.id}"]:checked`));
-    const bancadaOk = modoAtual !== "tecnico" || itensHardware.every((_, i) => document.querySelector(`input[name="hw_${i}"]:checked`));
-    if (modoAtual === "tecnico" && estagio === "ENTRADA") inspecaoEntradaConcluida = calcularEntradaConcluida();
-    document.querySelector('#estagioChecklist option[value="SAÍDA"]').disabled = !inspecaoEntradaConcluida;
+    
+    if (modoAtual === "tecnico") {
+      const fotosOk = fotosEntradaIds.every(id => document.getElementById(id).files.length > 0);
+      const bancadaOk = itensHardware.every((_, i) => document.querySelector(`input[name="hw_${i}"]:checked`));
+      const status = obterValorRadio("statusReparo");
+      
+      document.getElementById("btnModoOS").disabled = (status !== "Aprovado" && status !== "Reprovado");
+      
+      if (status === "Aprovado" || status === "Reprovado") {
+        document.getElementById("btnModoOS").classList.add("active");
+      }
 
-    // Atualizar blocos condicionais
-    atualizarCamposComodato();
-    atualizarStatusReparo();
+      const pend = atualizarIndicadoresPendencia(validacaoIniciada);
+      const pronto = fotosOk && bancadaOk && status !== "Não informado";
+      document.querySelector(".btn-submit").classList.toggle("awaiting-completion", !pronto);
+      document.getElementById("textoBotaoEnvio").textContent = pronto ? "Enviar Diagnóstico para o Cliente" : "Verificar Checklist de Entrada";
+      return pronto;
+    }
 
-    const pend = atualizarIndicadoresPendencia(validacaoIniciada);
-    const pronto = modoAtual === "os"
-      ? pend.length === 0
-      : document.getElementById("formOS").checkValidity() && triagemOk && bancadaOk && pend.length === 0 && (modoAtual !== "tecnico" || fotosOk);
-    document.querySelector(".btn-submit").classList.toggle("awaiting-completion", !pronto);
-    const nome = document.getElementById("cliente").value.trim() || "Cliente";
-    document.getElementById("textoBotaoEnvio").textContent = pronto
-      ? (modoAtual === "tecnico" ? `Enviar Checklist de ${nome} pelo WhatsApp`
-         : modoAtual === "os" ? `Enviar Peças e Serviços de ${nome} pelo WhatsApp`
-         : "Enviar Dados para o WhatsApp da F5TEC")
-      : (modoAtual === "tecnico" ? `Verificar preenchimento do Checklist de ${nome}`
-         : modoAtual === "os" ? `Verificar dados de Peças e Serviços de ${nome}`
-         : "Verificar preenchimento para enviar");
-    renderizarDiagnostico();
-    return pronto;
+    if (modoAtual === "os") {
+      const pend = atualizarIndicadoresPendencia(validacaoIniciada);
+      const pronto = pend.length === 0;
+      document.querySelector(".btn-submit").classList.toggle("awaiting-completion", !pronto);
+      document.getElementById("textoBotaoEnvio").textContent = pronto ? "Enviar Orçamento para o Cliente" : "Verificar Dados Financeiros";
+      return pronto;
+    }
+
+    if (modoAtual === "checkout") {
+      const fotosOk = fotosSaidaIds.every(id => document.getElementById(id).files.length > 0);
+      const bancadaOk = itensHardware.every((_, i) => document.querySelector(`input[name="out_${i}"]:checked`));
+      const pend = atualizarIndicadoresPendencia(validacaoIniciada);
+      
+      const pronto = fotosOk && bancadaOk && pend.length === 0 && financeiroAprovado;
+      document.querySelector(".btn-submit").classList.toggle("awaiting-completion", !pronto);
+      document.getElementById("textoBotaoEnvio").textContent = pronto ? "Finalizar e Enviar Checkout" : "Verificar Checklist de Saída";
+      return pronto;
+    }
   }
 
   const formularioOS = document.getElementById("formOS");
@@ -1259,29 +1272,8 @@
     document.getElementById("erroSenhaAbas").classList.add("hidden");
   });
 
-  const seletorEstagio = document.getElementById("estagioChecklist");
-  let estagioAnterior = seletorEstagio.value;
-  seletorEstagio.addEventListener("change", () => {
-    validacaoIniciada = true;
-    if (estagioAnterior === "ENTRADA" && seletorEstagio.value === "SAÍDA" && !inspecaoEntradaConcluida) {
-      alert("Conclua as 6 fotos e todos os itens do checklist de entrada antes de avançar para a inspeção de saída.");
-      seletorEstagio.value = estagioAnterior; atualizarEstadoEnvio(); irParaPrimeiraPendencia(); return;
-    }
-    if (estagioAnterior !== seletorEstagio.value) {
-      document.querySelectorAll("#listaHardware input[type='radio']").forEach(i => { i.checked = false; });
-      marcacaoAutomaticaPorEtapa[seletorEstagio.value] = false;
-      if (seletorEstagio.value === "SAÍDA") {
-         setTimeout(marcarTodosOK, 50);
-      }
-    }
-    estagioAnterior = seletorEstagio.value;
-    atualizarStatusReparo();
-    atualizarEstadoEnvio();
-    irParaPrimeiraPendencia();
-  });
-
   function alternarModo(modo, senhaOk) {
-    if (["tecnico", "os"].includes(modo) && !abasProtegidasDesbloqueadas && !senhaOk) {
+    if (["tecnico", "os", "checkout"].includes(modo) && !abasProtegidasDesbloqueadas && !senhaOk) {
       modoProtegidoPendente = modo;
       document.getElementById("senhaAbas").value = "";
       document.getElementById("erroSenhaAbas").classList.add("hidden");
@@ -1291,32 +1283,38 @@
     }
     if (senhaOk) abasProtegidasDesbloqueadas = true;
     if (modo === "cliente") abasProtegidasDesbloqueadas = false;
-    if (modo === "tecnico" || modo === "os") validacaoIniciada = true;
+    
     modoAtual = modo;
-    if (modo === "tecnico" && document.getElementById("estagioChecklist").value === "ENTRADA") {
-      inspecaoEntradaConcluida = calcularEntradaConcluida();
-    }
+    
     const bC = document.getElementById("btnModoCliente");
     const bT = document.getElementById("btnModoTecnico");
     const bO = document.getElementById("btnModoOS");
-    bC.classList.toggle("active", modo === "cliente");
-    bT.classList.toggle("active", modo === "tecnico");
-    bO.classList.toggle("active", modo === "os");
-    bC.setAttribute("aria-pressed", modo === "cliente" ? "true" : "false");
-    bT.setAttribute("aria-pressed", modo === "tecnico" ? "true" : "false");
-    bO.setAttribute("aria-pressed", modo === "os" ? "true" : "false");
+    const bCh = document.getElementById("btnModoCheckout");
+    
+    [bC, bT, bO, bCh].forEach(b => { b.classList.remove("active"); b.setAttribute("aria-pressed", "false"); });
+    
+    if (modo === "cliente") bC.classList.add("active");
+    if (modo === "tecnico") bT.classList.add("active");
+    if (modo === "os") bO.classList.add("active");
+    if (modo === "checkout") bCh.classList.add("active");
+    
+    document.getElementById("blocoDadosOS").classList.toggle("hidden", modo !== "cliente");
+    document.getElementById("blocoTriagem").classList.toggle("hidden", modo !== "cliente");
+    document.getElementById("blocoTermos").classList.toggle("hidden", modo !== "cliente");
+    
     document.getElementById("blocoTecnico").classList.toggle("hidden", modo !== "tecnico");
     document.getElementById("blocoOS").classList.toggle("hidden", modo !== "os");
-    document.getElementById("blocoTriagem").classList.toggle("hidden", modo === "os");
-    document.getElementById("blocoTermos").classList.toggle("hidden", modo === "os");
-    if (modo !== "tecnico") {
-      document.getElementById("blocoAgendamento").classList.add("hidden");
-    }
+    document.getElementById("blocoCheckout").classList.toggle("hidden", modo !== "checkout");
+    
+    // Agendamento Coleta
+    const sE = document.getElementById("servicoEntrega").value === "Sim";
+    document.getElementById("areaAgendamentoColeta").classList.toggle("hidden", !sE || modo !== "tecnico");
+    
     atualizarCamposPagamento();
     atualizarStatusReparo();
     atualizarCamposComodato();
     atualizarEstadoEnvio();
-    if (modo === "tecnico" || modo === "os") irParaPrimeiraPendencia();
+    if (modo !== "cliente") irParaPrimeiraPendencia();
   }
 
   function addPonto(num, btn) {
@@ -1362,8 +1360,7 @@
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
   }
   function obterFotosEtapaAtual() {
-    const est = document.getElementById("estagioChecklist").value;
-    const ids = est === "ENTRADA" ? fotosEntradaIds : fotosSaidaIds;
+    const ids = modoAtual === "tecnico" ? fotosEntradaIds : fotosSaidaIds;
     const arr = [];
     ids.forEach(id => {
       const inp = document.getElementById(id);
@@ -1372,7 +1369,7 @@
     return arr;
   }
 
-  /* =============== LINK DE RETORNO (comprimido) =============== */
+  /* =============== LINK DE RETORNO =============== */
   function utf8ToBase64Url(str) {
     const bytes = new TextEncoder().encode(str);
     let bin = "";
@@ -1472,12 +1469,12 @@
       return true;
     } catch (e) {
       console.error("Falha ao carregar dados da URL:", e);
-      setTimeout(() => alert("O link de retorno estava incompleto ou foi cortado.\n\nOs dados do cliente podem ser visualizados na mensagem do WhatsApp e digitados novamente se necessário."), 200);
+      setTimeout(() => alert("O link de retorno estava incompleto."), 200);
       return false;
     }
   }
 
-  /* =============== COMPRESSÃO E ENVIO DAS FOTOS =============== */
+  /* =============== FOTOS =============== */
   function comprimirImagem(file, maxDim, quality) {
     maxDim = maxDim || 1600;
     quality = quality || 0.82;
@@ -1591,6 +1588,7 @@
     e.preventDefault();
     validacaoIniciada = true;
     if (!atualizarEstadoEnvio()) { irParaPrimeiraPendencia(); return; }
+    
     const dataAtual = new Date().toLocaleDateString("pt-BR");
     let msg = "";
     let numeroDestino = NUMERO_CLIENTE;
@@ -1598,34 +1596,33 @@
     if (modoAtual === "tecnico") {
       const tel = document.getElementById("telefone").value.replace(/\D/g, "");
       const telPais = (tel.length === 10 || tel.length === 11) ? `55${tel}` : tel;
-      if (!/^55\d{10,11}$/.test(telPais)) {
-        alert("Telefone do cliente inválido."); document.getElementById("telefone").focus(); return;
-      }
+      if (!/^55\d{10,11}$/.test(telPais)) { alert("Telefone do cliente inválido."); return; }
       numeroDestino = telPais;
-      const estagioAtual = document.getElementById("estagioChecklist").value;
+      
       const fotos = obterFotosEtapaAtual();
-      // Incluir foto do comodato se houver (e não estiver "sem disponibilidade")
-      const comodatoSim = obterValorRadio("comodato") === "Sim (Sujeito a disponibilidade)";
-      const semDispComodato = document.getElementById("chkSemDisponibilidade").checked;
-      if (comodatoSim && !semDispComodato) {
-        const fc = document.getElementById("comodatoFoto");
-        if (fc && fc.files.length > 0) Array.from(fc.files).forEach(f => fotos.push(f));
+      const simClienteComodato = obterValorRadio("comodato") === "Sim (Sujeito a disponibilidade)";
+      const temDispComodato = obterValorRadio("disponibilidadeComodato") === "Sim";
+      
+      if (simClienteComodato && temDispComodato) {
+        ["comodatoFotoFrente","comodatoFotoVerso","comodatoFotoIMEI"].forEach(id => {
+          const el = document.getElementById(id);
+          if (el && el.files.length > 0) Array.from(el.files).forEach(f => fotos.push(f));
+        });
       }
+      
       const diag = gerarRelatorioDiagnostico();
 
-      msg = `*F5TEC - CHECKLIST E DIAGNÓSTICO*\n`;
+      msg = `*F5TEC - LAUDO TÉCNICO PRELIMINAR*\n`;
       msg += `Olá, ${document.getElementById("cliente").value}!\n\n`;
-      msg += `*Aparelho:* ${document.getElementById("marca").value} ${document.getElementById("modelo").value}\n`;
-      msg += `*Estágio:* ${estagioAtual}\n\n`;
+      msg += `*Aparelho:* ${document.getElementById("marca").value} ${document.getElementById("modelo").value}\n\n`;
 
-      msg += `*LAUDO TÉCNICO PRELIMINAR:*\nO dispositivo passou por avaliação em nossa bancada especializada. Foram realizados testes minuciosos de hardware e software conforme o checklist abaixo. Ressaltamos que qualquer intervenção interna pode acarretar riscos adicionais conforme os termos de garantia.\n\n`;
-
-      msg += `*RELATÓRIO DE DIAGNÓSTICO — ${estagioAtual}*\n`;
+      msg += `O dispositivo passou por avaliação em nossa bancada especializada. Segue o relatório:\n\n`;
+      
       if (diag.defeitos.length > 0) {
-        msg += `\n*Itens com DEFEITO (${diag.defeitos.length}):*\n`;
+        msg += `*Itens com DEFEITO (${diag.defeitos.length}):*\n`;
         diag.defeitos.forEach(d => { msg += `• ${d}\n`; });
       } else {
-        msg += `\nNenhum defeito identificado\n`;
+        msg += `Nenhum defeito identificado.\n`;
       }
       if (diag.naoTestados.length > 0) {
         msg += `\n*Itens NÃO TESTADOS (${diag.naoTestados.length}):*\n`;
@@ -1633,83 +1630,94 @@
       }
       msg += `\n*Itens OK:* ${diag.ok.length} de ${itensHardware.length}\n\n`;
 
-      msg += `*CHECKLIST DETALHADO:*\n`;
-      itensHardware.forEach((nome, idx) => {
-        msg += `• ${nome}: *${obterValorRadio("hw_" + idx)}*\n`;
-      });
-
-      // Status do reparo
-      const statusReparo = obterValorRadio("statusReparo");
-      if (statusReparo && statusReparo !== "Não informado") {
-        msg += `\n*RESULTADO DO ORÇAMENTO:* ${statusReparo}\n`;
+      // Agendamento Coleta
+      const sE = document.getElementById("servicoEntrega").value === "Sim";
+      if (sE) {
+        const dataColeta = document.getElementById("dataHoraColetaTecnico").value;
+        msg += `*AGENDAMENTO DE COLETA:*\n`;
+        msg += `• Data confirmada: ${dataColeta || "A combinar"}\n\n`;
       }
 
-      // Agendamento
-      const tipoEntregaFinal = document.getElementById("tipoEntregaFinal").value;
-      if (tipoEntregaFinal) {
-        msg += `\n*AGENDAMENTO DE ENTREGA / RETIRADA:*\n`;
-        msg += `• Modalidade: ${tipoEntregaFinal}\n`;
-        if (tipoEntregaFinal === "Tele-busca e Entrega") {
-          const ef = document.getElementById("enderecoEntregaFinal").value;
-          if (ef) msg += `• Endereço: ${ef}\n`;
-          const pr = document.getElementById("pontoReferenciaFinal").value;
-          if (pr) msg += `• Referência: ${pr}\n`;
-          const ll = document.getElementById("linkLocalizacaoFinal").value;
-          if (ll) msg += `• Localização: ${ll}\n`;
-        }
-        const dh = document.getElementById("dataHoraAgendamento").value;
-        if (dh) msg += `• Data/Horário: ${dh}\n`;
-      }
-
-      // Aviso de taxas se reprovado
-      if (statusReparo === "Reprovado") {
-        msg += `\n⚠️ *AVISO DE TAXAS (Reparo Não Autorizado):*\n`;
-        msg += `Conforme os Termos de Serviço aceitos digitalmente (Cláusula 4), serão cobradas:\n`;
-        msg += `• Taxa de Diagnóstico: R$ 50,00 (Cláusula 2.1)\n`;
-        msg += `• Taxa de Deslocamento: R$ 1,00/km (Cláusula 2.8), se aplicável\n`;
-        msg += `\nO aceite digital já cobre estas cobranças. Nenhum valor será reembolsado pela taxa de diagnóstico.\n`;
-      }
-
-      // Dados do comodato (técnico preencheu)
-      if (comodatoSim) {
-        const cM = document.getElementById("comodatoMarca").value;
-        const cMo = document.getElementById("comodatoModelo").value;
-        const cC = document.getElementById("comodatoCor").value;
-        const cI = document.getElementById("comodatoIMEI").value;
-        const cO = document.getElementById("comodatoObservacao").value;
-        if (semDispComodato) {
-          msg += `\n*APARELHO RESERVA (COMODATO):* Solicitado — Sem disponibilidade no momento\n`;
-        } else if (cM || cMo) {
-          msg += `\n*APARELHO RESERVA (COMODATO):*\n`;
-          if (cM) msg += `• Marca: ${cM}\n`;
-          if (cMo) msg += `• Modelo: ${cMo}\n`;
-          if (cC) msg += `• Cor: ${cC}\n`;
-          if (cI) msg += `• IMEI/Série: ${cI}\n`;
-          if (cO) msg += `• Obs: ${cO}\n`;
+      // Comodato
+      if (simClienteComodato) {
+        if (!temDispComodato) {
+          msg += `*APARELHO RESERVA:* Solicitado — Sem disponibilidade no momento.\n\n`;
         } else {
-          msg += `\n*APARELHO RESERVA (COMODATO):* Solicitado — Dados pendentes (a assistência confirmará com o cliente)\n`;
+          msg += `*APARELHO RESERVA (COMODATO):*\n`;
+          msg += `• Marca: ${document.getElementById("comodatoMarca").value}\n`;
+          msg += `• Modelo: ${document.getElementById("comodatoModelo").value}\n`;
+          msg += `• Obs: ${document.getElementById("comodatoObservacao").value}\n`;
+          msg += `⚠ *Lembrete:* O aparelho deve ser devolvido nas mesmas condições.\n\n`;
         }
       }
 
-      if (estagioAtual === "ENTRADA" && statusReparo !== "Reprovado") {
-        msg += `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
-        msg += `*APROVAÇÃO DO DIAGNÓSTICO E ORÇAMENTO*\n\n`;
-        msg += `Com base no checklist acima, precisamos da sua confirmação para prosseguir:\n\n`;
-        msg += `1. *Quero reparar TUDO* que foi identificado no diagnóstico\n`;
-        msg += `2. *Quero reparar só o NECESSÁRIO* para o aparelho funcionar\n`;
-        msg += `3. *Não autorizo reparo agora* - vou retirar o aparelho sem conserto\n\n`;
+      msg += `━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+      msg += `*APROVAÇÃO DO DIAGNÓSTICO*\n\n`;
+      msg += `1. *Autorizo o reparo* (Seguiremos para o orçamento)\n`;
+      msg += `2. *Não autorizo o reparo* (Sujeito a taxas)\n\n`;
+      msg += `-> *Responda com o número da opção.*\n`;
+      msg += `━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+      
+      msg += `${TERMOS_WHATSAPP}\n`;
 
-        msg += `*Qual a forma de pagamento preferida?*\n`;
-        msg += `• PIX\n`;
-        msg += `• Dinheiro\n`;
-        msg += `• Cartão de Crédito (Aceitamos em até 18x. O repasse do acréscimo é feito conforme a taxa da maquininha)\n\n`;
+      const btn = document.querySelector(".btn-submit");
+      const txtOrig = document.getElementById("textoBotaoEnvio").textContent;
+      btn.disabled = true;
+      document.getElementById("textoBotaoEnvio").textContent = "Preparando fotos...";
+      try { await enviarMensagemComFotos(numeroDestino, msg, fotos); }
+      finally { btn.disabled = false; document.getElementById("textoBotaoEnvio").textContent = txtOrig; }
+      
+      alert("Laudo enviado para o cliente! Aguarde a resposta dele. Se ele aprovar, vá para a aba Financeiro e adicione as peças/serviços. Se reprovar, adicione as taxas e finalize.");
+      return;
+    }
 
-        msg += `*Em quantas vezes você pretende parcelar?* (Caso opte por Cartão de Crédito, temos taxas diferenciadas por parcelamento).\n\n`;
+    if (modoAtual === "os") {
+      const tel = document.getElementById("telefone").value.replace(/\D/g, "");
+      const telPais = (tel.length === 10 || tel.length === 11) ? `55${tel}` : tel;
+      if (!/^55\d{10,11}$/.test(telPais)) { alert("Telefone do cliente inválido."); return; }
+      numeroDestino = telPais;
 
-        msg += `-> *Responda com o número da opção (1, 2 ou 3), a forma de pagamento desejada e a quantidade de parcelas.*\n\n`;
-        msg += `Se você aprovar (opção 1 ou 2), já seguimos com o orçamento detalhado de peças e serviços e enviamos o valor para sua aprovação final.\n`;
-        msg += `━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+      msg = `*F5TEC - ORÇAMENTO DE SERVIÇO*\n`;
+      msg += `Olá, ${document.getElementById("cliente").value}!\n\n`;
+      msg += `• Aparelho: ${document.getElementById("marca").value} ${document.getElementById("modelo").value}\n\n`;
+      msg += `${gerarResumoRegistrosOS()}\n\n`;
+      msg += `${gerarResumoPagamento()}\n\n`;
+      msg += `Para aprovar o serviço e prosseguirmos com o reparo, por favor responda esta mensagem confirmando.`;
+    }
+
+    if (modoAtual === "checkout") {
+      const tel = document.getElementById("telefone").value.replace(/\D/g, "");
+      const telPais = (tel.length === 10 || tel.length === 11) ? `55${tel}` : tel;
+      if (!/^55\d{10,11}$/.test(telPais)) { alert("Telefone do cliente inválido."); return; }
+      numeroDestino = telPais;
+      
+      const fotos = obterFotosEtapaAtual();
+      const comodatoRecolhido = document.getElementById("chkComodatoRecolhido").checked;
+      
+      msg = `*F5TEC - CHECKOUT DE SAÍDA (ENTREGA)*\n`;
+      msg += `Olá, ${document.getElementById("cliente").value}!\n\n`;
+      msg += `Seu aparelho ${document.getElementById("marca").value} ${document.getElementById("modelo").value} está pronto!\n\n`;
+      
+      msg += `*LAUDO DE ENTREGA:*\n`;
+      msg += `O dispositivo passou pelos testes finais de bancada e encontra-se em pleno funcionamento.\n`;
+      msg += `• Garantia: 90 dias (conforme termos aceitos)\n`;
+      msg += `• Data/Hora da Saída: ${new Date().toLocaleString('pt-BR')}\n\n`;
+
+      if (comodatoRecolhido) {
+        msg += `✅ *Aparelho reserva recolhido em perfeito estado.*\n\n`;
       }
+
+      const tipoEntrega = document.getElementById("tipoEntregaFinal").value;
+      if (tipoEntrega) {
+        msg += `*ENTREGA:* ${tipoEntrega}\n`;
+        if (tipoEntrega === "Tele-busca e Entrega") {
+          msg += `• Endereço: ${document.getElementById("enderecoEntregaFinal").value}\n`;
+          msg += `• Data/Horário: ${document.getElementById("dataHoraAgendamento").value}\n`;
+        }
+        msg += `\n`;
+      }
+
+      msg += `Agradecemos a confiança na F5TEC!\n`;
 
       const btn = document.querySelector(".btn-submit");
       const txtOrig = document.getElementById("textoBotaoEnvio").textContent;
@@ -1720,28 +1728,10 @@
       return;
     }
 
-    if (modoAtual === "os") {
-      const tel = document.getElementById("telefone").value.replace(/\D/g, "");
-      const telPais = (tel.length === 10 || tel.length === 11) ? `55${tel}` : tel;
-      if (!/^55\d{10,11}$/.test(telPais)) {
-        alert("Telefone do cliente inválido. Corrija antes de enviar.");
-        document.getElementById("telefone").focus(); return;
-      }
-      numeroDestino = telPais;
-
-      msg = `*F5TEC - PEÇAS E SERVIÇOS DA ORDEM DE SERVIÇO*\n`;
-      msg += `Data: ${dataAtual}\n\n`;
-      msg += `• Cliente: ${document.getElementById("cliente").value}\n`;
-      msg += `• Telefone/WhatsApp: ${document.getElementById("telefone").value}\n`;
-      msg += `• Marca: ${document.getElementById("marca").value}\n`;
-      msg += `• Modelo: ${document.getElementById("modelo").value}\n\n`;
-      msg += `${gerarResumoRegistrosOS()}\n\n`;
-      msg += `${gerarResumoPagamento()}\n`;
-    } else {
+    if (modoAtual === "cliente") {
       const telRaw = document.getElementById("telefone").value.replace(/\D/g, "");
       if (telRaw.length < 10 || telRaw.length > 11) {
         alert("Por favor, informe um número de WhatsApp válido com DDD.");
-        document.getElementById("telefone").focus();
         return;
       }
 
@@ -1751,51 +1741,31 @@
       const btn = document.querySelector(".btn-submit");
       const txtOrig = document.getElementById("textoBotaoEnvio").textContent;
       btn.disabled = true;
-      document.getElementById("textoBotaoEnvio").textContent = "Gerando links curtos...";
+      document.getElementById("textoBotaoEnvio").textContent = "Gerando links...";
 
       const linkTecnico = await encurtarUrl(linkTecnicoLongo);
       const linkOS = await encurtarUrl(linkOSLongo);
 
-      msg = `*F5TEC - CHECK-IN DE ORDEM DE SERVIÇO*\n`;
-      msg += `Data Entrada: ${dataAtual}\n\n`;
-      msg += `*1. DADOS DA O.S. (TELA PRINCIPAL)*\n`;
+      msg = `*F5TEC - NOVO CADASTRO DE OS*\n`;
+      msg += `Data: ${dataAtual}\n\n`;
       msg += `• Cliente: ${document.getElementById("cliente").value}\n`;
       msg += `• CPF: ${document.getElementById("cpf").value || "Não informado"}\n`;
-      msg += `• Telefone/WhatsApp: ${document.getElementById("telefone").value}\n`;
-      msg += `• Telefone/WhatsApp adicional: ${document.getElementById("telefoneAdicional").value || "Não informado"}\n`;
-      msg += `• Marca: ${document.getElementById("marca").value}\n`;
-      msg += `• Modelo: ${document.getElementById("modelo").value}\n`;
-      msg += `• Cor: ${document.getElementById("cor").value}\n`;
-      msg += `• Tipo: ${document.getElementById("tipo").value}\n`;
-
-      const pA = document.getElementById("possuiAcessorios").value;
-      const aD = pA === "Sim" ? `Sim: ${document.getElementById("acessorios").value}` : "Não";
-      msg += `• Acessórios: ${aD}\n`;
-
-      const sE = document.getElementById("servicoEntrega").value;
-      if (sE === "Sim") {
-        msg += `\n*Tele-busca e Entrega:*\n`;
+      msg += `• Telefone: ${document.getElementById("telefone").value}\n`;
+      msg += `• Aparelho: ${document.getElementById("marca").value} ${document.getElementById("modelo").value} (${document.getElementById("cor").value})\n`;
+      msg += `• Defeito: ${document.getElementById("defeito").value}\n\n`;
+      
+      const sE = document.getElementById("servicoEntrega").value === "Sim";
+      if (sE) {
+        msg += `*Tele-busca:* Sim\n`;
         msg += `• Endereço: ${document.getElementById("enderecoEntrega").value}\n`;
-        msg += `• Ref: ${document.getElementById("pontoReferencia").value || "N/A"}\n`;
-        msg += `• Localização: ${document.getElementById("linkLocalizacao").value || "N/A"}\n`;
-        msg += `• Retirada: ${document.getElementById("dataHoraRetirada").value}\n`;
-        msg += `(Lembrete: taxa de deslocamento R$1/km se não reparado)\n`;
-      } else {
-        msg += `• Tele-busca e Entrega: Não\n`;
+        msg += `• Preferência de Retirada: ${document.getElementById("dataHoraRetirada").value}\n\n`;
       }
 
-      msg += `• Observação: ${document.getElementById("observacao").value || "Nenhuma"}\n`;
-      msg += `• Senha: ${document.getElementById("senha").value}\n`;
-      msg += `• Defeito/Reclamação: ${document.getElementById("defeito").value}\n\n`;
-      msg += `*2. CHECK-IN (HISTÓRICO DE ENTRADA)*\n`;
       itensTriagem.forEach(i => { msg += `• ${i.label} *${obterValorRadio(i.id)}*\n`; });
 
-      msg += `\n*4. ACEITE LEGAL DIGITAL*\n`;
-      msg += `• Confirmado: Li e aceito os Termos de Serviço e Garantia F5TEC (Cláusula 4.1).\n\n`;
-      
-      msg += `━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
-      msg += `*LINK PARA O TÉCNICO (Checklist):*\n${linkTecnico}\n\n`;
-      msg += `*LINK PARA ORÇAMENTO (Peças/Serviços):*\n${linkOS}\n`;
+      msg += `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+      msg += `*LINK PARA O TÉCNICO (Diagnóstico):*\n${linkTecnico}\n\n`;
+      msg += `*LINK PARA O FINANCEIRO (Orçamento):*\n${linkOS}\n`;
       
       btn.disabled = false;
       document.getElementById("textoBotaoEnvio").textContent = txtOrig;
@@ -1805,7 +1775,7 @@
   }
 
   function resetarAtendimento() {
-    if (!confirm("Limpar todos os dados do atendimento atual? Esta ação não pode ser desfeita.")) return;
+    if (!confirm("Limpar todos os dados?")) return;
     formularioOS.reset();
     registrosOS = []; proximoRegistroId = 1;
     renderizarRegistrosOS();
@@ -1815,15 +1785,24 @@
     document.getElementById("chkTaxaDeslocamento").checked = false;
     document.getElementById("chkTaxaDiagnostico").checked = false;
     document.getElementById("campoDistanciaDeslocamento").classList.add("hidden");
-    inspecaoEntradaConcluida = false; checklistEstavaLiberado = false; validacaoIniciada = false;
-    marcacaoAutomaticaPorEtapa.ENTRADA = false; marcacaoAutomaticaPorEtapa["SAÍDA"] = false;
-    seletorEstagio.value = "ENTRADA"; estagioAnterior = "ENTRADA";
-    // Resetar blocos condicionais
+    inspecaoEntradaConcluida = false; validacaoIniciada = false; financeiroAprovado = false;
+    marcacaoAutomaticaPorEtapa.ENTRADA = false; marcacaoAutomaticaPorEtapa.SAIDA = false;
+    
+    document.getElementById("btnModoOS").disabled = true;
+    document.getElementById("btnModoCheckout").disabled = true;
+    document.getElementById("btnAprovarFinanceiro").disabled = true;
+    document.getElementById("btnAprovarFinanceiro").textContent = "✅ Aprovar Orçamento e Liberar Checkout";
+    document.getElementById("btnAprovarFinanceiro").style.background = "var(--accent)";
+    
     document.getElementById("blocoAgendamento").classList.add("hidden");
     document.getElementById("areaComodato").classList.add("hidden");
     document.getElementById("avisoComodatoCliente").classList.add("hidden");
-    document.getElementById("chkSemDisponibilidade").checked = false;
+    document.getElementById("camposComodato").classList.add("hidden");
     document.getElementById("camposEntregaFinal").classList.add("hidden");
+    document.getElementById("campoValorTroco").classList.add("hidden");
+    document.getElementById("areaAgendamentoColeta").classList.add("hidden");
+    document.getElementById("avisoReprovado").classList.add("hidden");
+    
     alternarModo("cliente");
     atualizarCampoAcessorios(); atualizarCamposEntrega(); atualizarCamposPagamento(); atualizarEstadoEnvio();
     if (window.history && window.history.replaceState) {
