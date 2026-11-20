@@ -52,12 +52,12 @@
     .card h2 { margin-top: 0; font-size: 1.05rem; color: #fff; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
     .field { margin-bottom: 14px; }
     label, fieldset.field > legend { display: block; font-size: 0.88rem; font-weight: 600; margin-bottom: 5px; padding: 0; color: #d1d5db; }
-    input[type="text"], input[type="tel"], input[type="file"], select, textarea {
+    input[type="text"], input[type="tel"], input[type="number"], input[type="file"], select, textarea {
       width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.95rem;
       background: #27272a; color: #fff;
     }
     input::placeholder, textarea::placeholder { color: #6b7280; }
-    input[type="text"]:focus, input[type="tel"]:focus, input[type="file"]:focus, select:focus, textarea:focus {
+    input:focus, select:focus, textarea:focus {
       outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
     }
     textarea { resize: vertical; min-height: 70px; }
@@ -165,7 +165,7 @@
       border-radius: 8px; font-weight: 600; font-size: 0.95rem; cursor: pointer;
     }
     .btn-novo:hover { background: #3f3f46; }
-    .hidden { display: none; }
+    .hidden { display: none !important; }
     .resumo-registros > div.hidden { display: none; }
     .field-note {
       display: block; margin-top: 4px; font-size: 0.78rem; color: #9ca3af; font-weight: normal;
@@ -200,9 +200,14 @@
       margin-top: 4px; padding-top: 8px; border-top: 2px solid #4b5563;
       font-size: 1.05rem; font-weight: 800; color: #fff;
     }
+    .laudo-tecnico {
+      background: #1f2937; border-left: 4px solid var(--accent);
+      padding: 12px; margin-bottom: 16px; font-size: 0.9rem; line-height: 1.4;
+      color: #d1d5db; border-radius: 4px;
+    }
     @media (max-width: 480px) {
-      .mode-switch { gap: 4px; }
-      .mode-btn { font-size: 0.78rem; }
+      .mode-switch { gap: 4px; flex-wrap: wrap; }
+      .mode-btn { font-size: 0.75rem; padding: 8px 4px; }
       .registro-grid { grid-template-columns: 1fr 1fr; }
     }
   </style>
@@ -224,13 +229,13 @@
 <div class="container">
   <div class="mode-switch" role="group" aria-label="Selecione o modo de preenchimento">
     <button type="button" class="mode-btn active" id="btnModoCliente" aria-pressed="true" onclick="alternarModo('cliente')">
-      1. Check-in do Cliente
+      Check-in Cliente
     </button>
     <button type="button" class="mode-btn" id="btnModoTecnico" aria-pressed="false" onclick="alternarModo('tecnico')">
-      2. Checklist de Bancada
+      Bancada Técnica
     </button>
     <button type="button" class="mode-btn" id="btnModoOS" aria-pressed="false" onclick="alternarModo('os')">
-      3. Peças e Serviços
+      Financeiro
     </button>
   </div>
 
@@ -238,7 +243,7 @@
     <form id="formAcessoProtegido" class="password-dialog">
       <h2 id="tituloAcessoProtegido">Acesso protegido</h2>
       <div class="field">
-        <label for="senhaAbas">Digite a senha para acessar a Bancada e Peças/Serviços</label>
+        <label for="senhaAbas">Digite a senha para acessar a Bancada e Financeiro</label>
         <input type="password" id="senhaAbas" required autocomplete="current-password">
       </div>
       <p id="erroSenhaAbas" class="hidden" role="alert" style="color: #fca5a5; font-size: 0.85rem; margin: 5px 0 0;">Senha incorreta.</p>
@@ -315,6 +320,35 @@
         <label for="acessorios">Quais acessórios? *</label>
         <input type="text" id="acessorios" autocomplete="off" placeholder="Ex.: Capa, chip, cartão de memória">
       </div>
+
+      <div class="field">
+        <label for="servicoEntrega">Deseja serviço de Tele-busca e Entrega? *</label>
+        <select id="servicoEntrega" required onchange="atualizarCamposEntrega()">
+          <option value="" selected disabled>Selecione uma opção</option>
+          <option value="Não">Não</option>
+          <option value="Sim">Sim</option>
+        </select>
+        <small class="field-note warn">⚠ O frete é calculado por distância (R$ 1,00/km). O valor do frete só será cobrado caso o reparo não seja efetuado (taxa de deslocamento), conforme Termo 2.8.</small>
+      </div>
+      <div class="field hidden" id="camposEntrega">
+        <label for="enderecoEntrega">Endereço Completo (Rua, Número, Bairro, Cidade) *</label>
+        <input type="text" id="enderecoEntrega" autocomplete="off" placeholder="Ex.: Rua das Flores, 123, Centro, São Paulo">
+
+        <label for="pontoReferencia" style="margin-top: 8px;">Ponto de Referência</label>
+        <input type="text" id="pontoReferencia" autocomplete="off" placeholder="Ex.: Próximo à padaria X">
+
+        <label for="linkLocalizacao" style="margin-top: 8px; display: flex; justify-content: space-between; align-items: center;">
+          <span>Link da Localização (Google Maps)</span>
+          <a href="https://maps.google.com" target="_blank" rel="noopener" style="color: var(--accent); font-size: 0.8rem; text-decoration: underline;">Abrir Maps</a>
+        </label>
+        <input type="text" id="linkLocalizacao" autocomplete="off" placeholder="Cole o link do Google Maps aqui">
+
+        <label for="dataHoraRetirada" style="margin-top: 8px;">Dia e Horário de Retirada *</label>
+        <input type="text" id="dataHoraRetirada" autocomplete="off" placeholder="Ex.: Segunda-feira, às 14h">
+
+        <small class="field-note warn" style="margin-top:8px;">⚠ Será cobrada uma taxa de diagnóstico caso o reparo não seja efetuado (conforme Termo 2.1).</small>
+      </div>
+
       <div class="field">
         <label for="senha">Senha de Desbloqueio (PIN, Texto ou Padrão) *</label>
         <input type="text" id="senha" required autocomplete="off" placeholder="Digite a senha ou use o desenhador abaixo">
@@ -351,12 +385,12 @@
     </div>
 
     <div class="card hidden" id="blocoTecnico">
-      <h2>Checklist Técnico de Bancada (Entrada / Saída)</h2>
+      <h2>Checklist Técnico e Diagnóstico de Bancada (Entrada / Saída)</h2>
       <div class="field">
         <label for="estagioChecklist">Estágio da Inspeção</label>
         <select id="estagioChecklist">
-          <option value="ENTRADA">Inspeção de ENTRADA</option>
-          <option value="SAÍDA" disabled>Inspeção de SAÍDA (Entrega)</option>
+          <option value="ENTRADA">Inspeção e Diagnóstico de ENTRADA</option>
+          <option value="SAÍDA" disabled>Inspeção e Diagnóstico de SAÍDA (Entrega)</option>
         </select>
       </div>
       
@@ -385,9 +419,7 @@
         </div>
       </div>
       <small style="color: #9ca3af;">As fotos da etapa selecionada são obrigatórias. Conclua as fotos e todos os itens do checklist de entrada para liberar a inspeção de saída. Ao trocar de etapa, as marcações do checklist são reiniciadas. <strong style="color: #fff;">As fotos da etapa selecionada serão compartilhadas junto com a mensagem pelo próprio celular (Android/iOS).</strong> Se o navegador não permitir o envio automático, o WhatsApp será aberto com o texto e você anexa as fotos manualmente.</small>
-      <div class="field hidden" id="avisoChecklistFotos">
-        Anexe as fotos da etapa selecionada para liberar a marcação do checklist.
-      </div>
+
       <div class="field">
         <label for="fotosApp">Fotos Registradas no App?</label>
         <select id="fotosApp">
@@ -395,7 +427,8 @@
           <option value="Pendente">Pendente</option>
         </select>
       </div>
-      <div id="areaChecklistTecnico" class="hidden">
+
+      <div id="areaChecklistTecnico">
         <button type="button" class="btn-Quick ok" onclick="marcarTodosOK(); atualizarEstadoEnvio();">
           Marcar Todos como "OK"
         </button>
@@ -404,6 +437,7 @@
         </button>
         <div id="listaHardware"></div>
       </div>
+
       <div id="areaDiagnostico" class="hidden" style="margin-top:20px;">
         <h2 id="tituloDiagnostico" style="border-top:1px solid var(--border);padding-top:14px;color:#fff;">Relatório de Diagnóstico</h2>
         <div id="conteudoDiagnostico"></div>
@@ -436,6 +470,23 @@
           <label aria-hidden="true">&nbsp;</label>
           <button type="button" class="btn-adicionar" onclick="adicionarRegistroOS()">Adicionar registro</button>
         </div>
+      </div>
+
+      <div class="field" style="margin-top: 10px; background: #27272a; padding: 12px; border-radius: 6px;">
+        <label>Taxas Adicionais (Opcional)</label>
+        <label class="checkbox-row" style="font-size: 0.85rem; margin-bottom: 8px;">
+          <input type="checkbox" id="chkTaxaDeslocamento" onchange="toggleTaxaDeslocamento()">
+          <span>Taxa de Deslocamento (R$ 1,00/km)</span>
+        </label>
+        <div class="field hidden" id="campoDistanciaDeslocamento" style="margin-left: 28px; margin-bottom: 8px;">
+          <label for="inputDistancia" style="font-size: 0.8rem;">Distância total (km) *</label>
+          <input type="number" id="inputDistancia" value="1" min="1" step="1" oninput="atualizarTaxaDeslocamento()" style="padding: 6px;">
+        </div>
+
+        <label class="checkbox-row" style="font-size: 0.85rem;">
+          <input type="checkbox" id="chkTaxaDiagnostico" onchange="adicionarTaxaDiagnostico()">
+          <span>Taxa de Diagnóstico (R$ 50,00)</span>
+        </label>
       </div>
 
       <h2>Peças</h2>
@@ -604,7 +655,7 @@
     } catch (e) {
       console.warn("Erro ao encurtar URL:", e);
     }
-    return url; // Fallback para a URL longa se falhar
+    return url;
   }
 
   /* =============== PAGAMENTO =============== */
@@ -738,7 +789,52 @@
     document.getElementById("descricaoRegistro").focus();
     renderizarRegistrosOS();
   }
-  function removerRegistroOS(id) { registrosOS = registrosOS.filter(r => r.id !== id); renderizarRegistrosOS(); }
+  function removerRegistroOS(id) {
+    registrosOS = registrosOS.filter(r => r.id !== id);
+    if (id === 'taxa_Taxa de Deslocamento') document.getElementById('chkTaxaDeslocamento').checked = false;
+    if (id === 'taxa_Taxa de Diagnóstico') document.getElementById('chkTaxaDiagnostico').checked = false;
+    renderizarRegistrosOS();
+  }
+
+  function toggleTaxaDeslocamento() {
+    const chk = document.getElementById('chkTaxaDeslocamento');
+    document.getElementById('campoDistanciaDeslocamento').classList.toggle('hidden', !chk.checked);
+    atualizarTaxaDeslocamento();
+  }
+
+  function atualizarTaxaDeslocamento() {
+    const chk = document.getElementById('chkTaxaDeslocamento');
+    const dist = Number(document.getElementById('inputDistancia').value) || 0;
+    const val = dist * 1.0;
+    const id = 'taxa_Taxa de Deslocamento';
+
+    if (chk.checked) {
+      const existente = registrosOS.find(r => r.id === id);
+      if (existente) {
+        existente.valor = val;
+        existente.descricao = `Taxa de Deslocamento (${dist} km)`;
+      } else {
+        registrosOS.push({ id: id, categoria: 'Serviço', descricao: `Taxa de Deslocamento (${dist} km)`, quantidade: 1, valor: val });
+      }
+    } else {
+      registrosOS = registrosOS.filter(r => r.id !== id);
+    }
+    renderizarRegistrosOS();
+  }
+
+  function adicionarTaxaDiagnostico() {
+    const isChecked = document.getElementById('chkTaxaDiagnostico').checked;
+    const id = 'taxa_Taxa de Diagnóstico';
+    if (isChecked) {
+      if (!registrosOS.some(r => r.id === id)) {
+        registrosOS.push({ id: id, categoria: 'Serviço', descricao: 'Taxa de Diagnóstico', quantidade: 1, valor: 50 });
+      }
+    } else {
+      registrosOS = registrosOS.filter(r => r.id !== id);
+    }
+    renderizarRegistrosOS();
+  }
+
   function gerarResumoRegistrosOS() {
     if (registrosOS.length === 0) return "*5. PEÇAS E SERVIÇOS*\n• Nenhum registro cadastrado.";
     let r = "*5. PEÇAS E SERVIÇOS*\n";
@@ -797,13 +893,25 @@
     if (!sim) document.getElementById("acessorios").value = "";
   }
 
+  function atualizarCamposEntrega() {
+    const sim = document.getElementById("servicoEntrega").value === "Sim";
+    document.getElementById("camposEntrega").classList.toggle("hidden", !sim);
+    document.getElementById("enderecoEntrega").required = sim;
+    document.getElementById("dataHoraRetirada").required = sim;
+    if (!sim) {
+      document.getElementById("enderecoEntrega").value = "";
+      document.getElementById("pontoReferencia").value = "";
+      document.getElementById("linkLocalizacao").value = "";
+      document.getElementById("dataHoraRetirada").value = "";
+    }
+  }
+
   function atualizarIndicadoresPendencia(mostrar) {
     const pend = [];
-    const areaOculta = document.getElementById("areaChecklistTecnico").classList.contains("hidden");
     const sel = modoAtual === "os" ? "#blocoDadosOS .field, #blocoOS .field" : "#formOS .field, #formOS .checkbox-row";
     document.querySelectorAll(sel).forEach(c => {
       const vis = c.getClientRects().length > 0;
-      if (!vis || (c.closest("#listaHardware") && areaOculta)) {
+      if (!vis) {
         c.classList.remove("has-pending");
         c.querySelectorAll("[aria-invalid]").forEach(e => e.removeAttribute("aria-invalid"));
         return;
@@ -869,25 +977,30 @@
     area.classList.remove("hidden");
     document.getElementById("tituloDiagnostico").textContent = `Relatório de Diagnóstico — ${estagio}`;
     
-    // Cores adaptadas para o Dark Mode
-    let html = "";
+    let html = `
+      <div class="laudo-tecnico">
+        <strong>Laudo Técnico Preliminar:</strong><br>
+        O dispositivo passou por avaliação em nossa bancada especializada. Foram realizados testes minuciosos de hardware e software conforme o checklist abaixo. Ressaltamos que qualquer intervenção interna pode acarretar riscos adicionais conforme os termos de garantia.
+      </div>
+    `;
+
     if (defeitos.length > 0) {
       html += `<div style="background:#450a0a;border:1px solid #7f1d1d;border-radius:8px;padding:12px;margin-bottom:10px;">
-        <strong style="color:#fca5a5;display:block;margin-bottom:6px;">[!] Itens com DEFEITO (${defeitos.length}):</strong>
+        <strong style="color:#fca5a5;display:block;margin-bottom:6px;">Itens com DEFEITO (${defeitos.length}):</strong>
         <ul style="margin:0;padding-left:20px;color:#f87171;font-size:0.9rem;">${defeitos.map(d => `<li>${d}</li>`).join("")}</ul>
       </div>`;
     } else {
-      html += `<div style="background:#064e3b;border:1px solid #047857;border-radius:8px;padding:12px;margin-bottom:10px;"><strong style="color:#6ee7b7;">[OK] Nenhum defeito identificado</strong></div>`;
+      html += `<div style="background:#064e3b;border:1px solid #047857;border-radius:8px;padding:12px;margin-bottom:10px;"><strong style="color:#6ee7b7;">Nenhum defeito identificado</strong></div>`;
     }
     if (naoTestados.length > 0) {
       html += `<div style="background:#451a03;border:1px solid #78350f;border-radius:8px;padding:12px;margin-bottom:10px;">
-        <strong style="color:#fcd34d;display:block;margin-bottom:6px;">[?] Itens NÃO TESTADOS (${naoTestados.length}):</strong>
+        <strong style="color:#fcd34d;display:block;margin-bottom:6px;">Itens NÃO TESTADOS (${naoTestados.length}):</strong>
         <ul style="margin:0;padding-left:20px;color:#fbbf24;font-size:0.9rem;">${naoTestados.map(d => `<li>${d}</li>`).join("")}</ul>
       </div>`;
     }
     if (ok.length > 0) {
       html += `<div style="background:#172554;border:1px solid #1e3a8a;border-radius:8px;padding:12px;">
-        <strong style="color:#93c5fd;display:block;margin-bottom:6px;">[OK] Itens OK (${ok.length} de ${itensHardware.length}):</strong>
+        <strong style="color:#93c5fd;display:block;margin-bottom:6px;">Itens OK (${ok.length} de ${itensHardware.length}):</strong>
         <div style="color:#bfdbfe;font-size:0.85rem;">${ok.join(", ")}</div>
       </div>`;
     }
@@ -898,23 +1011,14 @@
     const estagio = document.getElementById("estagioChecklist").value;
     document.getElementById("fotosEntrada").classList.toggle("hidden", estagio !== "ENTRADA");
     document.getElementById("fotosSaida").classList.toggle("hidden", estagio !== "SAÍDA");
-    document.getElementById("avisoChecklistFotos").textContent = estagio === "ENTRADA"
-      ? "Anexe as 6 fotos do aparelho na entrada para liberar a marcação do checklist."
-      : "Anexe as 7 fotos (sendo a última o IMEI) do aparelho pronto para liberar a marcação do checklist de saída.";
     
     const idsAtuais = estagio === "ENTRADA" ? fotosEntradaIds : fotosSaidaIds;
     const fotosOk = idsAtuais.every(id => document.getElementById(id).files.length > 0);
     
-    const liberado = modoAtual === "tecnico" && fotosOk;
-    const foiLiberado = liberado && !checklistEstavaLiberado;
-    checklistEstavaLiberado = liberado;
-    document.getElementById("areaChecklistTecnico").classList.toggle("hidden", !liberado);
-    document.getElementById("avisoChecklistFotos").classList.toggle("hidden", modoAtual !== "tecnico" || fotosOk);
-    
     fotosEntradaIds.forEach(id => { document.getElementById(id).required = modoAtual === "tecnico" && estagio === "ENTRADA"; });
     fotosSaidaIds.forEach(id => { document.getElementById(id).required = modoAtual === "tecnico" && estagio === "SAÍDA"; });
     
-    if (liberado && obterValorRadio("liga") === "Não" && !marcacaoAutomaticaPorEtapa[estagio]) {
+    if (modoAtual === "tecnico" && obterValorRadio("liga") === "Não" && !marcacaoAutomaticaPorEtapa[estagio]) {
       marcacaoAutomaticaPorEtapa[estagio] = true;
       marcarTodosNaoTestados();
     }
@@ -925,7 +1029,7 @@
     const pend = atualizarIndicadoresPendencia(validacaoIniciada);
     const pronto = modoAtual === "os"
       ? pend.length === 0
-      : document.getElementById("formOS").checkValidity() && triagemOk && bancadaOk && pend.length === 0;
+      : document.getElementById("formOS").checkValidity() && triagemOk && bancadaOk && pend.length === 0 && (modoAtual !== "tecnico" || fotosOk);
     document.querySelector(".btn-submit").classList.toggle("awaiting-completion", !pronto);
     const nome = document.getElementById("cliente").value.trim() || "Cliente";
     document.getElementById("textoBotaoEnvio").textContent = pronto
@@ -935,7 +1039,6 @@
       : (modoAtual === "tecnico" ? `Verificar preenchimento do Checklist de ${nome}`
          : modoAtual === "os" ? `Verificar dados de Peças e Serviços de ${nome}`
          : "Verificar preenchimento para enviar");
-    if (foiLiberado) irParaPrimeiraPendencia();
     renderizarDiagnostico();
     return pronto;
   }
@@ -1045,9 +1148,14 @@
   }
 
   function marcarTodosOK() {
-    itensHardware.forEach((_, idx) => {
-      const alvo = document.getElementById("grp_hw_" + idx).querySelector('input[value="OK"]');
-      if (alvo) alvo.checked = true;
+    itensHardware.forEach((item, idx) => {
+      if (item === "Botão Assistente") {
+        const alvoNaoTestado = document.getElementById("grp_hw_" + idx).querySelector('input[value="Não Testado"]');
+        if (alvoNaoTestado) alvoNaoTestado.checked = true;
+      } else {
+        const alvo = document.getElementById("grp_hw_" + idx).querySelector('input[value="OK"]');
+        if (alvo) alvo.checked = true;
+      }
     });
   }
 
@@ -1116,6 +1224,11 @@
       tipo: document.getElementById("tipo").value,
       possuiAcessorios: document.getElementById("possuiAcessorios").value,
       acessorios: document.getElementById("acessorios").value,
+      servicoEntrega: document.getElementById("servicoEntrega").value,
+      enderecoEntrega: document.getElementById("enderecoEntrega").value,
+      pontoReferencia: document.getElementById("pontoReferencia").value,
+      linkLocalizacao: document.getElementById("linkLocalizacao").value,
+      dataHoraRetirada: document.getElementById("dataHoraRetirada").value,
       senha: document.getElementById("senha").value,
       defeito: document.getElementById("defeito").value,
       observacao: document.getElementById("observacao").value,
@@ -1134,7 +1247,7 @@
     try {
       const jsonStr = descomprimirPayload(d);
       const dados = JSON.parse(jsonStr);
-      ["cliente","cpf","telefone","telefoneAdicional","marca","modelo","cor","tipo","senha","defeito","observacao"].forEach(id => {
+      ["cliente","cpf","telefone","telefoneAdicional","marca","modelo","cor","tipo","senha","defeito","observacao","enderecoEntrega","pontoReferencia","linkLocalizacao","dataHoraRetirada"].forEach(id => {
         if (dados[id] != null) {
           const el = document.getElementById(id);
           if (el) el.value = dados[id];
@@ -1144,6 +1257,10 @@
         document.getElementById("possuiAcessorios").value = dados.possuiAcessorios;
         atualizarCampoAcessorios();
         if (dados.acessorios) document.getElementById("acessorios").value = dados.acessorios;
+      }
+      if (dados.servicoEntrega) {
+        document.getElementById("servicoEntrega").value = dados.servicoEntrega;
+        atualizarCamposEntrega();
       }
       if (dados.triagem) {
         itensTriagem.forEach(item => {
@@ -1301,39 +1418,45 @@
       msg += `*Aparelho:* ${document.getElementById("marca").value} ${document.getElementById("modelo").value}\n`;
       msg += `*Estágio:* ${estagioAtual}\n\n`;
 
+      msg += `*LAUDO TÉCNICO PRELIMINAR:*\nO dispositivo passou por avaliação em nossa bancada especializada. Foram realizados testes minuciosos de hardware e software conforme o checklist abaixo. Ressaltamos que qualquer intervenção interna pode acarretar riscos adicionais conforme os termos de garantia.\n\n`;
+
       msg += `*RELATÓRIO DE DIAGNÓSTICO — ${estagioAtual}*\n`;
       if (diag.defeitos.length > 0) {
-        msg += `\n[!] *Itens com DEFEITO (${diag.defeitos.length}):*\n`;
+        msg += `\n*Itens com DEFEITO (${diag.defeitos.length}):*\n`;
         diag.defeitos.forEach(d => { msg += `• ${d}\n`; });
       } else {
-        msg += `\n[OK] Nenhum defeito identificado\n`;
+        msg += `\nNenhum defeito identificado\n`;
       }
       if (diag.naoTestados.length > 0) {
-        msg += `\n[?] *Itens NÃO TESTADOS (${diag.naoTestados.length}):*\n`;
+        msg += `\n*Itens NÃO TESTADOS (${diag.naoTestados.length}):*\n`;
         diag.naoTestados.forEach(d => { msg += `• ${d}\n`; });
       }
-      msg += `\n[OK] Itens OK: ${diag.ok.length} de ${itensHardware.length}\n\n`;
+      msg += `\n*Itens OK:* ${diag.ok.length} de ${itensHardware.length}\n\n`;
 
       msg += `*CHECKLIST DETALHADO:*\n`;
       itensHardware.forEach((nome, idx) => {
         msg += `• ${nome}: *${obterValorRadio("hw_" + idx)}*\n`;
       });
 
-      msg += `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
-      msg += `*APROVAÇÃO DO DIAGNÓSTICO E ORÇAMENTO*\n\n`;
-      msg += `Com base no checklist acima, precisamos da sua confirmação para prosseguir:\n\n`;
-      msg += `1. *Quero reparar TUDO* que foi identificado no diagnóstico\n`;
-      msg += `2. *Quero reparar só o NECESSÁRIO* para o aparelho funcionar\n`;
-      msg += `3. *Não autorizo reparo agora* - vou retirar o aparelho sem conserto\n\n`;
-      
-      msg += `*Qual a forma de pagamento preferida?*\n`;
-      msg += `• PIX\n`;
-      msg += `• Dinheiro\n`;
-      msg += `• Cartão de Crédito (Aceitamos em até 18x. O repasse do acréscimo é feito conforme a taxa da maquininha)\n\n`;
-      
-      msg += `-> *Responda com o número da opção (1, 2 ou 3) e a forma de pagamento desejada.*\n\n`;
-      msg += `Se você aprovar (opção 1 ou 2), já seguimos com o orçamento detalhado de peças e serviços e enviamos o valor para sua aprovação final.\n`;
-      msg += `━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+      if (estagioAtual === "ENTRADA") {
+        msg += `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+        msg += `*APROVAÇÃO DO DIAGNÓSTICO E ORÇAMENTO*\n\n`;
+        msg += `Com base no checklist acima, precisamos da sua confirmação para prosseguir:\n\n`;
+        msg += `1. *Quero reparar TUDO* que foi identificado no diagnóstico\n`;
+        msg += `2. *Quero reparar só o NECESSÁRIO* para o aparelho funcionar\n`;
+        msg += `3. *Não autorizo reparo agora* - vou retirar o aparelho sem conserto\n\n`;
+
+        msg += `*Qual a forma de pagamento preferida?*\n`;
+        msg += `• PIX\n`;
+        msg += `• Dinheiro\n`;
+        msg += `• Cartão de Crédito (Aceitamos em até 18x. O repasse do acréscimo é feito conforme a taxa da maquininha)\n\n`;
+
+        msg += `*Em quantas vezes você pretende parcelar?* (Caso opte por Cartão de Crédito, temos taxas diferenciadas por parcelamento).\n\n`;
+
+        msg += `-> *Responda com o número da opção (1, 2 ou 3), a forma de pagamento desejada e a quantidade de parcelas.*\n\n`;
+        msg += `Se você aprovar (opção 1 ou 2), já seguimos com o orçamento detalhado de peças e serviços e enviamos o valor para sua aprovação final.\n`;
+        msg += `━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+      }
 
       const btn = document.querySelector(".btn-submit");
       const txtOrig = document.getElementById("textoBotaoEnvio").textContent;
@@ -1345,6 +1468,14 @@
     }
 
     if (modoAtual === "os") {
+      const tel = document.getElementById("telefone").value.replace(/\D/g, "");
+      const telPais = (tel.length === 10 || tel.length === 11) ? `55${tel}` : tel;
+      if (!/^55\d{10,11}$/.test(telPais)) {
+        alert("Telefone do cliente inválido. Corrija antes de enviar.");
+        document.getElementById("telefone").focus(); return;
+      }
+      numeroDestino = telPais;
+
       msg = `*F5TEC - PEÇAS E SERVIÇOS DA ORDEM DE SERVIÇO*\n`;
       msg += `Data: ${dataAtual}\n\n`;
       msg += `• Cliente: ${document.getElementById("cliente").value}\n`;
@@ -1354,7 +1485,13 @@
       msg += `${gerarResumoRegistrosOS()}\n\n`;
       msg += `${gerarResumoPagamento()}\n`;
     } else {
-      // ========== CHECK-IN (cliente → F5TEC) ==========
+      const telRaw = document.getElementById("telefone").value.replace(/\D/g, "");
+      if (telRaw.length < 10 || telRaw.length > 11) {
+        alert("Por favor, informe um número de WhatsApp válido com DDD.");
+        document.getElementById("telefone").focus();
+        return;
+      }
+
       const linkTecnicoLongo = gerarLinkCheckin("tecnico");
       const linkOSLongo = gerarLinkCheckin("os");
       
@@ -1363,7 +1500,6 @@
       btn.disabled = true;
       document.getElementById("textoBotaoEnvio").textContent = "Gerando links curtos...";
 
-      // Encurtando os links de forma assíncrona
       const linkTecnico = await encurtarUrl(linkTecnicoLongo);
       const linkOS = await encurtarUrl(linkOSLongo);
 
@@ -1378,9 +1514,23 @@
       msg += `• Modelo: ${document.getElementById("modelo").value}\n`;
       msg += `• Cor: ${document.getElementById("cor").value}\n`;
       msg += `• Tipo: ${document.getElementById("tipo").value}\n`;
+
       const pA = document.getElementById("possuiAcessorios").value;
       const aD = pA === "Sim" ? `Sim: ${document.getElementById("acessorios").value}` : "Não";
       msg += `• Acessórios: ${aD}\n`;
+
+      const sE = document.getElementById("servicoEntrega").value;
+      if (sE === "Sim") {
+        msg += `\n*Tele-busca e Entrega:*\n`;
+        msg += `• Endereço: ${document.getElementById("enderecoEntrega").value}\n`;
+        msg += `• Ref: ${document.getElementById("pontoReferencia").value || "N/A"}\n`;
+        msg += `• Localização: ${document.getElementById("linkLocalizacao").value || "N/A"}\n`;
+        msg += `• Retirada: ${document.getElementById("dataHoraRetirada").value}\n`;
+        msg += `(Lembrete: taxa de deslocamento R$1/km se não reparado)\n`;
+      } else {
+        msg += `• Tele-busca e Entrega: Não\n`;
+      }
+
       msg += `• Observação: ${document.getElementById("observacao").value || "Nenhuma"}\n`;
       msg += `• Senha: ${document.getElementById("senha").value}\n`;
       msg += `• Defeito/Reclamação: ${document.getElementById("defeito").value}\n\n`;
@@ -1408,11 +1558,14 @@
     sequenciaPadrao = [];
     document.querySelectorAll(".dot-btn").forEach(b => b.classList.remove("selected"));
     document.querySelectorAll('#formOS input[type="radio"]').forEach(i => { i.checked = false; });
+    document.getElementById("chkTaxaDeslocamento").checked = false;
+    document.getElementById("chkTaxaDiagnostico").checked = false;
+    document.getElementById("campoDistanciaDeslocamento").classList.add("hidden");
     inspecaoEntradaConcluida = false; checklistEstavaLiberado = false; validacaoIniciada = false;
     marcacaoAutomaticaPorEtapa.ENTRADA = false; marcacaoAutomaticaPorEtapa["SAÍDA"] = false;
     seletorEstagio.value = "ENTRADA"; estagioAnterior = "ENTRADA";
     alternarModo("cliente");
-    atualizarCampoAcessorios(); atualizarCamposPagamento(); atualizarEstadoEnvio();
+    atualizarCampoAcessorios(); atualizarCamposEntrega(); atualizarCamposPagamento(); atualizarEstadoEnvio();
     if (window.history && window.history.replaceState) {
       window.history.replaceState({}, document.title, window.location.pathname);
     }
@@ -1421,6 +1574,7 @@
 
   popularParcelas();
   atualizarCampoAcessorios();
+  atualizarCamposEntrega();
   atualizarCamposPagamento();
   
   setTimeout(() => {
