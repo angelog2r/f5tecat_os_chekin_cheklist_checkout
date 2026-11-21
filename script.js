@@ -38,6 +38,7 @@ let modoAtual = "cliente", abasProtegidasDesbloqueadas = false, modoProtegidoPen
 let ultimoFocoAntesDialog = null, sequenciaPadrao = [], validacaoIniciada = false;
 let financeiroAprovado = false, osSessaoNumero = null, filtroHistoricoAtual = "Todos";
 let osEmEdicaoPDF = null, debounceEnvioId = null, registrosOS = [], proximoRegistroId = 1;
+let enviando = false;
 
 const TAXAS_PARCELAMENTO = { 1:3.08,2:10.74,3:12.09,4:12.45,5:14.76,6:15.01,7:16.96,8:17.20,9:19.55,10:20.46,11:20.73,12:22.02,13:23.13,14:24.25,15:25.36,16:26.48,17:27.59,18:28.70 };
 const itensTriagem = [
@@ -112,7 +113,7 @@ function atualizarCamposComodato() {
   document.getElementById("avisoComodatoCliente").classList.toggle("hidden", !simCliente || modoAtual === "tecnico");
   if (simCliente && modoAtual === "tecnico") {
     document.getElementById("camposComodato").classList.toggle("hidden", !temDisp);
-    ["comodatoMarca","comodatoModelo","comodatoObservacao","comodatoFotoFrente","comodatoFotoVerso","comodatoFotoIMEI"].forEach(id => { const el = document.getElementById(id); if (el) el.required = temDisp; });
+    ["comodatoMarca","comodatoModelo","comodatoCor","comodatoObservacao","comodatoFotoFrente","comodatoFotoVerso","comodatoFotoIMEI"].forEach(id => { const el = document.getElementById(id); if (el) el.required = temDisp; });
   }
 }
 
@@ -169,8 +170,17 @@ async function aprovarFinanceiro() {
 async function encurtarUrl(url) {
   try {
     const ctrl = new AbortController();
-    const req = fetch(`https://is.gd/create.php?format=json&url=${encodeURIComponent(url)}`, { signal: ctrl.signal }) .then(async r => r.ok ? (await r.json()).shorturl || null : null).catch(() => null); const t = new Promise(res => setTimeout(() => { try { ctrl.abort(); } catch {} res(null); }, 4000)); return (await Promise.race([req, t])) || url; } catch { return url; } }  // ================= PAGAMENTO =================
-function popularParcelas() { const s = document.getElementById("parcelasCartao"); s.replaceChildren(); for (let i = 1; i <= 18; i++) { const o = document.createElement("option"); o.value = String(i); o.textContent = i === 1 ? "1x (à vista)" : `${i}x`; s.appendChild(o); }
+    const req = fetch(`https://is.gd/create.php?format=json&url=${encodeURIComponent(url)}`, { signal: ctrl.signal })
+      .then(async r => r.ok ? (await r.json()).shorturl || null : null).catch(() => null);
+    const t = new Promise(res => setTimeout(() => { try { ctrl.abort(); } catch {} res(null); }, 4000));
+    return (await Promise.race([req, t])) || url;
+  } catch { return url; }
+}
+
+// ================= PAGAMENTO =================
+function popularParcelas() {
+  const s = document.getElementById("parcelasCartao"); s.replaceChildren();
+  for (let i = 1; i <= 18; i++) { const o = document.createElement("option"); o.value = String(i); o.textContent = i === 1 ? "1x (à vista)" : `${i}x`; s.appendChild(o); }
 }
 function atualizarTaxaCartao() {
   const p = document.getElementById("parcelasCartao").value;
@@ -195,8 +205,8 @@ function renderizarPagamento() {
   document.getElementById("linhaAcrescimo").classList.toggle("hidden", !cartao);
   document.getElementById("linhaTroco").classList.toggle("hidden", !dinheiro || !d.precisaTroco);
   if (cartao) {
-    document.getElementById("resumoParcelas").textContent = `${d.parcelas}x de${fmtMoeda(d.valorParcela)}`;
-    document.getElementById("resumoAcrescimo").textContent = d.taxaValida ? `${fmtPct(d.taxa)}\% (${fmtMoeda(d.acrescimo)})` : "Informe a taxa";
+    document.getElementById("resumoParcelas").textContent = `${d.parcelas}x de ${fmtMoeda(d.valorParcela)}`;
+    document.getElementById("resumoAcrescimo").textContent = d.taxaValida ? `${fmtPct(d.taxa)}% (${fmtMoeda(d.acrescimo)})` : "Informe a taxa";
   }
   if (dinheiro && d.precisaTroco) document.getElementById("resumoTroco").textContent = d.valorTroco ? `R$ ${d.valorTroco}` : "Informe";
   document.getElementById("totalComPagamento").textContent = fmtMoeda(d.totalFinal);
@@ -226,7 +236,10 @@ function gerarResumoPagamento() {
   const d = obterDadosPagamento();
   let r = "*FORMA DE PAGAMENTO*\n";
   if (!d.forma) return r + "- Não informada";
-  r += `- Forma: ${d.forma}\n`; if (d.forma === "Cartão de Crédito") { r += `- Parcelas: ${d.parcelas}x de ${fmtMoeda(d.valorParcela)}\n`; r += `- Taxa: ${fmtPct(d.taxa)}% (acréscimo ${fmtMoeda(d.acrescimo)})\n`; } else if (d.forma === "PIX") r += "- PIX: +55 51 99737 1944\n"; else if (d.forma === "Dinheiro") r += `- Troco: ${d.precisaTroco ? `Sim, para R$ ${d.valorTroco}` : "Não (exato)"}\n`;
+  r += `- Forma: *${d.forma}*\n`;
+  if (d.forma === "Cartão de Crédito") { r += `- Parcelas: *${d.parcelas}x de ${fmtMoeda(d.valorParcela)}*\n`; r += `- Taxa: *${fmtPct(d.taxa)}%* (acréscimo ${fmtMoeda(d.acrescimo)})\n`; }
+  else if (d.forma === "PIX") r += "- PIX: *+55 51 99737 1944*\n";
+  else if (d.forma === "Dinheiro") r += `- Troco: *${d.precisaTroco ? `Sim, para R$ ${d.valorTroco}` : "Não (exato)"}*\n`;
   r += `- *Total a pagar: ${fmtMoeda(d.totalFinal)}*`;
   return r;
 }
@@ -236,7 +249,7 @@ function criarItemRegistro(r) {
   const item = document.createElement("div"); item.className = "registro-item";
   const det = document.createElement("div");
   const desc = document.createElement("strong"); desc.textContent = r.descricao;
-  const qtd = document.createElement("small"); qtd.textContent = `${r.quantidade} ×${fmtMoeda(r.valor)}`;
+  const qtd = document.createElement("small"); qtd.textContent = `${r.quantidade} × ${fmtMoeda(r.valor)}`;
   det.append(desc, document.createElement("br"), qtd);
   const dir = document.createElement("div"); dir.style.textAlign = "right";
   const tot = document.createElement("div"); tot.className = "registro-valor"; tot.textContent = fmtMoeda(r.quantidade * r.valor);
@@ -286,9 +299,23 @@ function atualizarTaxaDeslocamento() {
   if (!chk.checked || raw === "" || !Number.isFinite(dist) || dist <= 0) { registrosOS = registrosOS.filter(r => r.id !== id); renderizarRegistrosOS(); return; }
   const exist = registrosOS.find(r => r.id === id);
   if (exist) { exist.valor = dist; exist.descricao = `Taxa de Deslocamento (${dist} km)`; }
-  else registrosOS.push({ id, categoria: "Serviço", descricao: `Taxa de Deslocamento (${dist} km)`, quantidade: 1, valor: dist }); renderizarRegistrosOS(); } function adicionarTaxaDiagnostico() { const id = "taxa_Taxa de Diagnóstico"; if (document.getElementById("chkTaxaDiagnostico").checked) { if (!registrosOS.some(r => r.id === id)) registrosOS.push({ id, categoria:"Serviço", descricao:"Taxa de Diagnóstico", quantidade:1, valor:50 }); } else registrosOS = registrosOS.filter(r => r.id !== id); renderizarRegistrosOS(); } function gerarResumoRegistrosOS() { if (!registrosOS.length) return "*PEÇAS E SERVIÇOS*\n- Nenhum registro."; let r = "*PEÇAS E SERVIÇOS*\n"; ["Peça","Serviço"].forEach(cat => { const regs = registrosOS.filter(x => x.categoria === cat); r += `\n*${cat === "Peça" ? "Peças" : "Serviços"}*\n`;
+  else registrosOS.push({ id, categoria: "Serviço", descricao: `Taxa de Deslocamento (${dist} km)`, quantidade: 1, valor: dist });
+  renderizarRegistrosOS();
+}
+function adicionarTaxaDiagnostico() {
+  const id = "taxa_Taxa de Diagnóstico";
+  if (document.getElementById("chkTaxaDiagnostico").checked) { if (!registrosOS.some(r => r.id === id)) registrosOS.push({ id, categoria:"Serviço", descricao:"Taxa de Diagnóstico", quantidade:1, valor:50 }); }
+  else registrosOS = registrosOS.filter(r => r.id !== id);
+  renderizarRegistrosOS();
+}
+function gerarResumoRegistrosOS() {
+  if (!registrosOS.length) return "*PEÇAS E SERVIÇOS*\n- Nenhum registro.";
+  let r = "*PEÇAS E SERVIÇOS*\n";
+  ["Peça","Serviço"].forEach(cat => {
+    const regs = registrosOS.filter(x => x.categoria === cat);
+    r += `\n*${cat === "Peça" ? "Peças" : "Serviços"}*\n`;
     if (!regs.length) r += "- Nenhum\n";
-    else regs.forEach(x => r += `- ${x.descricao}:${x.quantidade} × ${fmtMoeda(x.valor)} =${fmtMoeda(x.quantidade * x.valor)}\n`);
+    else regs.forEach(x => r += `- ${x.descricao}: ${x.quantidade} × ${fmtMoeda(x.valor)} = ${fmtMoeda(x.quantidade * x.valor)}\n`);
   });
   r += `\n- Total peças: ${fmtMoeda(totalCat("Peça"))}\n- Total serviços: ${fmtMoeda(totalCat("Serviço"))}\n- *TOTAL: ${fmtMoeda(totalCat("Peça") + totalCat("Serviço"))}*`;
   return r;
@@ -534,34 +561,116 @@ function gerarRelatorioDiagnostico(prefixo) {
   });
   return { defeitos: def, naoTestados: nt, ok };
 }
+
 function renderizarDiagnostico() {
   const area = document.getElementById("areaDiagnostico"), cont = document.getElementById("conteudoDiagnostico");
   if (!area || !cont) return;
   if (modoAtual !== "tecnico") { area.classList.add("hidden"); return; }
-  const d = gerarRelatorioDiagnostico("hw_");
-  if (!d.defeitos.length && !d.naoTestados.length && !d.ok.length) { area.classList.add("hidden"); return; }
   area.classList.remove("hidden");
-  let html = `<div class="laudo-tecnico"><strong>Laudo Preliminar:</strong> Dispositivo avaliado em bancada.</div>`;
-  if (d.defeitos.length) html += `<div style="background:#450a0a;border:1px solid #7f1d1d;border-radius:8px;padding:12px;margin-bottom:10px;"><strong style="color:#fca5a5;">DEFEITOS (${d.defeitos.length}):</strong><ul style="margin:6px 0 0;padding-left:20px;color:#f87171;font-size:0.9rem;">${d.defeitos.map(x => `<li>${x}</li>`).join("")}</ul></div>`;
-  else html += `<div style="background:#064e3b;border:1px solid #047857;border-radius:8px;padding:12px;margin-bottom:10px;"><strong style="color:#6ee7b7;">Nenhum defeito</strong></div>`;
-  if (d.naoTestados.length) html += `<div style="background:#451a03;border:1px solid #78350f;border-radius:8px;padding:12px;margin-bottom:10px;"><strong style="color:#fcd34d;">NÃO TESTADOS (${d.naoTestados.length}):</strong><ul style="margin:6px 0 0;padding-left:20px;color:#fbbf24;font-size:0.9rem;">${d.naoTestados.map(x => `<li>${x}</li>`).join("")}</ul></div>`; cont.innerHTML = html; }  function atualizarEstadoEnvio() { const btn = document.querySelector(".btn-submit"), txt = document.getElementById("textoBotaoEnvio"); if (modoAtual === "cliente") { const triagemOk = itensTriagem.every(i => document.querySelector(`input[name="${i.id}"]:checked`));
+
+  const d = gerarRelatorioDiagnostico("hw_");
+  if (!d.defeitos.length && !d.naoTestados.length && !d.ok.length) {
+    cont.innerHTML = `<div style="background:#1f2937;border:1px dashed #374151;border-radius:6px;padding:16px;font-size:0.85rem;color:#9ca3af;text-align:center;">Marque os itens do checklist acima para visualizar o Laudo Técnico.</div>`;
+    return;
+  }
+
+  const marca = document.getElementById("marca").value.trim() || "—";
+  const modelo = document.getElementById("modelo").value.trim() || "—";
+  const cor = document.getElementById("cor").value.trim();
+  const defeito = document.getElementById("defeito").value.trim() || "—";
+  const numOS = osSessaoNumero || "(gerado no envio)";
+  const total = d.ok.length + d.defeitos.length + d.naoTestados.length;
+  const arrumar = registrosOS.filter(r => r.categoria === "Serviço").map(r => r.descricao).join(", ");
+
+  let html = `<div style="background:#1f2937;border-left:4px solid #3b82f6;border-radius:4px;padding:14px;margin-bottom:10px;">
+    <div style="font-size:0.95rem;font-weight:700;color:#fff;margin-bottom:10px;">LAUDO TÉCNICO DE DIAGNÓSTICO — F5TEC</div>
+    <div style="font-size:0.85rem;color:#d1d5db;line-height:1.7;">
+      <div><strong style="color:#93c5fd;">Aparelho:</strong> ${marca} ${modelo}${cor ? ` (${cor})` : ""}</div>
+      <div><strong style="color:#93c5fd;">OS / Protocolo:</strong> ${numOS}</div>
+      <div><strong style="color:#93c5fd;">Reclamação:</strong> ${defeito}</div>
+    </div>
+    <div style="font-size:0.82rem;color:#9ca3af;margin-top:10px;padding-top:10px;border-top:1px solid #374151;font-style:italic;">
+      Após abertura técnica e testes de bancada, identificamos o seguinte quadro:
+    </div>
+  </div>`;
+
+  html += `<div style="background:#450a0a;border:1px solid #7f1d1d;border-radius:8px;padding:12px;margin-bottom:10px;">
+    <strong style="color:#fca5a5;font-size:0.9rem;">DIAGNÓSTICO CONSTATADO:</strong>
+    <ul style="margin:6px 0 0;padding-left:20px;color:#f87171;font-size:0.85rem;line-height:1.6;">${d.defeitos.length ? d.defeitos.map(x => `<li>${x}</li>`).join("") : '<li>Nenhum defeito funcional identificado nos itens testados.</li>'}</ul>
+  </div>`;
+
+  if (d.naoTestados.length) {
+    html += `<div style="background:#451a03;border:1px solid #78350f;border-radius:8px;padding:12px;margin-bottom:10px;">
+      <strong style="color:#fcd34d;font-size:0.9rem;">ITENS NÃO TESTADOS:</strong>
+      <ul style="margin:6px 0 0;padding-left:20px;color:#fbbf24;font-size:0.85rem;line-height:1.6;">${d.naoTestados.map(x => `<li>${x}</li>`).join("")}</ul>
+    </div>`;
+  }
+
+  html += `<div style="background:#064e3b;border:1px solid #047857;border-radius:8px;padding:12px;margin-bottom:10px;">
+    <strong style="color:#6ee7b7;font-size:0.9rem;">SOLUÇÃO RECOMENDADA:</strong>
+    <div style="margin-top:6px;color:#a7f3d0;font-size:0.85rem;line-height:1.6;">${arrumar || "A definir conforme aprovação do orçamento."}</div>
+  </div>`;
+
+  html += `<div style="background:#1f2937;border-radius:6px;padding:12px;font-size:0.85rem;color:#d1d5db;line-height:1.7;">
+    <strong style="color:#fff;">RESUMO DO CHECKLIST</strong><br>
+    Itens avaliados: <strong>${total}</strong> · Aprovados: <strong style="color:#6ee7b7;">${d.ok.length}</strong> · Defeitos: <strong style="color:#f87171;">${d.defeitos.length}</strong> · Não testados: <strong style="color:#fbbf24;">${d.naoTestados.length}</strong>
+  </div>`;
+
+  cont.innerHTML = html;
+}
+
+function atualizarEstadoEnvio() {
+  const btn = document.querySelector(".btn-submit"), txt = document.getElementById("textoBotaoEnvio");
+  if (enviando) { btn.disabled = true; return false; }
+  if (modoAtual === "cliente") {
+    const triagemOk = itensTriagem.every(i => document.querySelector(`input[name="${i.id}"]:checked`));
     const pronto = formularioValidoVisivel() && triagemOk;
-    btn.classList.toggle("awaiting-completion", !pronto); btn.disabled = !pronto; btn.setAttribute("aria-disabled", String(!pronto));
+    atualizarIndicadoresPendencia(validacaoIniciada);
+    btn.classList.toggle("awaiting-completion", !pronto);
+    btn.setAttribute("aria-disabled", String(!pronto));
     txt.textContent = pronto ? "Enviar Cadastro para a Assistência" : "Verificar Preenchimento";
     return pronto;
   }
   if (modoAtual === "tecnico") {
     const fotosOk = fotosEntradaIds.every(id => document.getElementById(id).files.length > 0);
-    const bancadaOk = itensHardware.every((_, i) => document.querySelector(`input[name="hw_${i}"]:checked`)); const status = radioValor("statusReparo"); const respAg = radioValor("confirmacaoAgendamento"); const horario = document.getElementById("dataHoraRetirada").value.trim(); const agOk = document.getElementById("servicoEntrega").value !== "Sim" || (horario !== "" && (respAg === "Sim" || (respAg === "Não" && document.getElementById("dataHoraColetaTecnico").value.trim() !== ""))); document.getElementById("btnModoOS").disabled = (status !== "Aprovado" && status !== "Reprovado"); atualizarIndicadoresPendencia(validacaoIniciada); renderizarDiagnostico(); const pronto = fotosOk && bancadaOk && status !== "Não informado" && agOk; btn.classList.toggle("awaiting-completion", !pronto); btn.disabled = !pronto; btn.setAttribute("aria-disabled", String(!pronto)); txt.textContent = pronto ? "Enviar Laudo para o Cliente" : "Verificar Checklist"; return pronto; } if (modoAtual === "os") { const pend = atualizarIndicadoresPendencia(validacaoIniciada); const pronto = pend.length === 0; btn.classList.toggle("awaiting-completion", !pronto); btn.disabled = !pronto; btn.setAttribute("aria-disabled", String(!pronto)); txt.textContent = pronto ? "Enviar Orçamento para o Cliente" : "Verificar Dados Financeiros"; return pronto; } if (modoAtual === "checkout") { const fotosOk = fotosSaidaIds.every(id => document.getElementById(id).files.length > 0); const bancadaOk = itensHardware.every((_, i) => document.querySelector(`input[name="out_${i}"]:checked`));
+    const bancadaOk = itensHardware.every((_, i) => document.querySelector(`input[name="hw_${i}"]:checked`));
+    const status = radioValor("statusReparo");
+    const respAg = radioValor("confirmacaoAgendamento");
+    const horario = document.getElementById("dataHoraRetirada").value.trim();
+    const agOk = document.getElementById("servicoEntrega").value !== "Sim" || (horario !== "" && (respAg === "Sim" || (respAg === "Não" && document.getElementById("dataHoraColetaTecnico").value.trim() !== "")));
+    document.getElementById("btnModoOS").disabled = (status !== "Aprovado" && status !== "Reprovado");
+    atualizarIndicadoresPendencia(validacaoIniciada);
+    renderizarDiagnostico();
+    const pronto = fotosOk && bancadaOk && status !== "Não informado" && agOk;
+    btn.classList.toggle("awaiting-completion", !pronto);
+    btn.setAttribute("aria-disabled", String(!pronto));
+    txt.textContent = pronto ? "Enviar Laudo para o Cliente" : "Verificar Checklist";
+    return pronto;
+  }
+  if (modoAtual === "os") {
+    const pend = atualizarIndicadoresPendencia(validacaoIniciada);
+    const pronto = pend.length === 0;
+    btn.classList.toggle("awaiting-completion", !pronto);
+    btn.setAttribute("aria-disabled", String(!pronto));
+    txt.textContent = pronto ? "Enviar Orçamento para o Cliente" : "Verificar Dados Financeiros";
+    return pronto;
+  }
+  if (modoAtual === "checkout") {
+    const fotosOk = fotosSaidaIds.every(id => document.getElementById(id).files.length > 0);
+    const bancadaOk = itensHardware.every((_, i) => document.querySelector(`input[name="out_${i}"]:checked`));
     const pend = atualizarIndicadoresPendencia(validacaoIniciada);
     const pronto = fotosOk && bancadaOk && pend.length === 0 && financeiroAprovado;
-    btn.classList.toggle("awaiting-completion", !pronto); btn.disabled = !pronto; btn.setAttribute("aria-disabled", String(!pronto));
+    btn.classList.toggle("awaiting-completion", !pronto);
+    btn.setAttribute("aria-disabled", String(!pronto));
     txt.textContent = pronto ? "Finalizar OS e Escolher PDF" : "Verificar Checklist de Saída";
     return pronto;
   }
   if (modoAtual === "historico") {
-    btn.classList.add("awaiting-completion"); btn.disabled = true; btn.setAttribute("aria-disabled", "true");
-    txt.textContent = "Histórico de Ordens"; return false;
+    btn.classList.add("awaiting-completion");
+    btn.disabled = true;
+    btn.setAttribute("aria-disabled", "true");
+    txt.textContent = "Histórico de Ordens";
+    return false;
   }
   return false;
 }
@@ -664,7 +773,34 @@ function alternarModo(modo, senhaOk) {
     const cor = document.getElementById("cor").value.trim();
     const def = document.getElementById("defeito").value.trim() || "—";
     const cont = document.getElementById("tituloAparelhoConteudo"); cont.replaceChildren();
-    const l1 = document.createElement("div"); l1.style.cssText = "margin-top:4px;color:#fff;font-weight:700;"; l1.textContent = `${m}${mo}${cor ? ` (${cor})` : ""}`; const l2 = document.createElement("div"); l2.style.cssText = "margin-top:6px;font-size:0.82rem;color:#d1d5db;"; const s = document.createElement("strong"); s.textContent = "Defeito: "; l2.appendChild(s); l2.appendChild(document.createTextNode(def)); cont.append(l1, l2); } if (modo === "historico") renderizarHistorico(); atualizarCamposPagamento(); atualizarStatusReparo(); atualizarCamposComodato(); atualizarEstadoEnvio(); if (modo !== "cliente" && modo !== "historico") irParaPrimeiraPendencia(); }  function addPonto(num, btn) { if (!sequenciaPadrao.includes(num)) { sequenciaPadrao.push(num); btn.classList.add("selected"); document.getElementById("senha").value = "Padrão: " + sequenciaPadrao.join(" -> "); } } function limparPadrao() { sequenciaPadrao = []; document.querySelectorAll(".dot-btn").forEach(b => b.classList.remove("selected")); document.getElementById("senha").value = ""; }  function marcarTodosOK(prefixo) { itensHardware.forEach((item, idx) => { const grp = document.getElementById("grp_" + prefixo + "_" + idx); if (!grp) return; const val = item === "Botão Assistente" ? "Não Testado" : "OK"; const alvo = grp.querySelector(`input[value="${val}"]`); if (alvo) alvo.checked = true;
+    const l1 = document.createElement("div"); l1.style.cssText = "margin-top:4px;color:#fff;font-weight:700;"; l1.textContent = `${m} ${mo}${cor ? ` (${cor})` : ""}`;
+    const l2 = document.createElement("div"); l2.style.cssText = "margin-top:6px;font-size:0.82rem;color:#d1d5db;";
+    const s = document.createElement("strong"); s.textContent = "Defeito: "; l2.appendChild(s); l2.appendChild(document.createTextNode(def)); cont.append(l1, l2);
+  }
+  if (modo === "historico") renderizarHistorico();
+  atualizarCamposPagamento(); atualizarStatusReparo(); atualizarCamposComodato(); atualizarEstadoEnvio();
+  if (modo !== "cliente" && modo !== "historico") irParaPrimeiraPendencia();
+}
+
+function addPonto(num, btn) {
+  if (!sequenciaPadrao.includes(num)) {
+    sequenciaPadrao.push(num);
+    btn.classList.add("selected");
+    document.getElementById("senha").value = "Padrão: " + sequenciaPadrao.join(" -> ");
+  }
+}
+function limparPadrao() {
+  sequenciaPadrao = [];
+  document.querySelectorAll(".dot-btn").forEach(b => b.classList.remove("selected"));
+  document.getElementById("senha").value = "";
+}
+function marcarTodosOK(prefixo) {
+  itensHardware.forEach((item, idx) => {
+    const grp = document.getElementById("grp_" + prefixo + "_" + idx);
+    if (!grp) return;
+    const val = item === "Botão Assistente" ? "Não Testado" : "OK";
+    const alvo = grp.querySelector(`input[value="${val}"]`);
+    if (alvo) alvo.checked = true;
   });
   renderizarDiagnostico();
 }
@@ -755,7 +891,6 @@ function carregarDadosDaURL() {
     return true;
   } catch (e) { console.error(e); setTimeout(() => mostrarAlerta("Link inválido.", "Erro"), 200); return false; }
 }
-
 // ================= FOTOS E UPLOAD =================
 function configurarPreviewsFotos() {
   document.querySelectorAll('input[type="file"][accept*="image"]').forEach(inp => {
@@ -867,6 +1002,7 @@ function coletarDadosOS() {
       disponivel: radioValor("disponibilidadeComodato") === "Sim",
       marca: document.getElementById("comodatoMarca").value.trim(),
       modelo: document.getElementById("comodatoModelo").value.trim(),
+      cor: document.getElementById("comodatoCor").value.trim(),
       observacao: document.getElementById("comodatoObservacao").value.trim(),
       recolhido: document.getElementById("chkComodatoRecolhido").checked
     },
@@ -939,7 +1075,7 @@ function criarCardOS(os) {
 
 // ================= MENSAGENS WHATSAPP =================
 function secaoCliente() {
-  return `*1. CLIENTE*\n- Nome: ${document.getElementById("cliente").value || "—"}\n- CPF: ${document.getElementById("cpf").value || "—"}\n- Telefone: ${document.getElementById("telefone").value || "—"}${document.getElementById("telefoneAdicional").value ? `\n- Tel. adicional: ${document.getElementById("telefoneAdicional").value}` : ""}`;
+  return `*1. CLIENTE*\n- Nome: *${document.getElementById("cliente").value || "—"}*\n- CPF: *${document.getElementById("cpf").value || "—"}*\n- Telefone: *${document.getElementById("telefone").value || "—"}*${document.getElementById("telefoneAdicional").value ? `\n- Tel. adicional: *${document.getElementById("telefoneAdicional").value}*` : ""}`;
 }
 function secaoAparelho() {
   const acc = document.getElementById("possuiAcessorios").value;
@@ -947,26 +1083,26 @@ function secaoAparelho() {
     ? " - " + document.getElementById("acessorios").value
     : "";
   const observation = document.getElementById("observacao").value;
-  return `*2. APARELHO*\n- ${document.getElementById("marca").value} ${document.getElementById("modelo").value} (${document.getElementById("cor").value})\n- Tipo: ${document.getElementById("tipo").value}\n- Acess?rios: ${acc}${accessories}\n- Defeito: ${document.getElementById("defeito").value || "?"}${observation ? `\n- Obs: ${observation}` : ""}`;
+  return `*2. APARELHO*\n- Modelo: *${document.getElementById("marca").value} ${document.getElementById("modelo").value} (${document.getElementById("cor").value})*\n- Tipo: *${document.getElementById("tipo").value}*\n- Acessórios: *${acc}*${accessories}\n- Defeito: *${document.getElementById("defeito").value || "—"}*${observation ? `\n- Obs: *${observation}*` : ""}`;
 }
 function secaoTriagem() {
-  return "*3. TRIAGEM INICIAL*\n" + itensTriagem.map(i => `- ${i.label} ${radioValor(i.id)}`).join("\n");
+  return "*3. TRIAGEM INICIAL*\n" + itensTriagem.map(i => `- ${i.label} *${radioValor(i.id)}*`).join("\n");
 }
 function secaoColetaCliente() {
   if (document.getElementById("servicoEntrega").value !== "Sim") return "";
   const linhas = [
     "*4. COLETA / ENTREGA*",
-    `- Endereço: ${document.getElementById("enderecoEntrega").value || "—"}`
+    `- Endereço: *${document.getElementById("enderecoEntrega").value || "—"}*`
   ];
   const referencia = document.getElementById("pontoReferencia").value.trim();
   const mapa = document.getElementById("linkLocalizacao").value.trim();
-  const dataHora = document.getElementById("dataHoraRetirada").value;
-  if (referencia) linhas.push(`- Referência: ${referencia}`);
+  const dataHora = formatarDataHoraLocal(document.getElementById("dataHoraRetirada").value.trim());
+  if (referencia) linhas.push(`- Referência: *${referencia}*`);
   if (mapa) linhas.push(`- Link do Maps: ${mapa}`);
-  linhas.push(`- Preferência de data/hora: ${dataHora || "—"}`);
+  linhas.push(`- Preferência de data/hora: *${dataHora || "—"}*`);
   return linhas.join("\n");
 }
-function secaoLaudoCompleto(prefixo, tipo) {
+function secaoLaudoCompleto(prefixo, tipo, numeroOS) {
   const d = gerarRelatorioDiagnostico(prefixo);
   const marca = document.getElementById("marca").value.trim();
   const modelo = document.getElementById("modelo").value.trim();
@@ -974,48 +1110,53 @@ function secaoLaudoCompleto(prefixo, tipo) {
   const defeito = document.getElementById("defeito").value.trim();
   const arrumar = document.getElementById("solucaoCustom")?.value?.trim() ||
     (registrosOS.filter(r => r.categoria === "Serviço").map(r => r.descricao).join(", ")) || "";
-
-  let r = tipo === "saida" ? "*LAUDO TECNICO DE ENTREGA - F5TEC*\n" : "*LAUDO TECNICO DE DIAGNOSTICO - F5TEC*\n";
-  r += "=".repeat(32) + "\n\n";
-  r += `*Aparelho:* ${marca} ${modelo}${cor ? ` (${cor})` : ""}\n`;
-  r += `*Reclamacao:* ${defeito || "—"}\n`;
-  if (tipo === "saida" && arrumar) r += `*Itens arrumados:* ${arrumar}\n`;
-  r += "\n";
-
   const total = d.ok.length + d.defeitos.length + d.naoTestados.length;
-  r += `*RESUMO DO CHECKLIST*\n`;
-  r += `- Total de itens avaliados: ${total}\n`;
-  r += `- Aprovados: ${d.ok.length}\n`;
-  r += `- Defeitos: ${d.defeitos.length}\n`;
-  r += `- Nao testados: ${d.naoTestados.length}\n\n`;
 
-  if (d.ok.length) {
-    r += `*ITENS APROVADOS (${d.ok.length}):*\n`;
-    d.ok.forEach(x => r += `✓ ${x}\n`);
+  let r = tipo === "saida" ? "*LAUDO TÉCNICO DE ENTREGA — F5TEC*\n" : "*LAUDO TÉCNICO DE DIAGNÓSTICO — F5TEC*\n";
+  r += "─────────────────────────────\n\n";
+  r += `*Aparelho:* *${marca} ${modelo}${cor ? ` (${cor})` : ""}*\n`;
+  r += `*OS / Protocolo:* *${numeroOS || "—"}*\n`;
+  r += `*Reclamação:* *${defeito || "—"}*\n\n`;
+  r += `Após abertura técnica e testes de bancada, identificamos o seguinte quadro no seu aparelho:\n\n`;
+
+  if (tipo === "saida" && arrumar) {
+    r += `*SERVIÇOS REALIZADOS*\n`;
+    registrosOS.filter(x => x.categoria === "Serviço").forEach(x => r += `• *${x.descricao}*\n`);
     r += "\n";
-  }
-  if (d.defeitos.length) {
-    r += `*ITENS COM DEFEITO (${d.defeitos.length}):*\n`;
-    d.defeitos.forEach(x => r += `✗ ${x}\n`);
-    r += "\n";
+    if (d.defeitos.length) {
+      r += `*DIAGNÓSTICO CONSTATADO*\n`;
+      d.defeitos.forEach(x => r += `• *${x}*\n`);
+      r += "\n";
+    }
   } else {
-    r += "*ITENS COM DEFEITO:* Nenhum\n\n";
+    r += `*DIAGNÓSTICO CONSTATADO*\n`;
+    if (d.defeitos.length) {
+      d.defeitos.forEach(x => r += `• *${x}*\n`);
+    } else {
+      r += `• *Nenhum defeito funcional identificado nos itens testados.*\n`;
+    }
+    if (d.naoTestados.length) {
+      r += `\n*ITENS NÃO TESTADOS*\n`;
+      d.naoTestados.forEach(x => r += `• *${x}*\n`);
+    }
+    r += `\n*SOLUÇÃO RECOMENDADA*\n`;
+    r += `• *${arrumar || "A definir conforme aprovação do orçamento."}*\n`;
   }
-  if (d.naoTestados.length) {
-    r += `*ITENS NAO TESTADOS (${d.naoTestados.length}):*\n`;
-    d.naoTestados.forEach(x => r += `? ${x}\n`);
-    r += "\n";
-  }
+
+  r += `\n*RESUMO DO CHECKLIST*\n`;
+  r += `- Itens avaliados: *${total}*\n`;
+  r += `- Aprovados: *${d.ok.length}*\n`;
+  r += `- Defeitos: *${d.defeitos.length}*\n`;
+  r += `- Não testados: *${d.naoTestados.length}*\n\n`;
 
   if (tipo === "diagnostico") {
-    r += "*PROXIMOS PASSOS:*\n";
-    r += "Para enviarmos o orcamento correto, precisamos que voce nos responda:\n\n";
-    r += "1. O que voce deseja arrumar? (apenas os itens com defeito, ou algum outro servico?)\n";
-    r += "2. Qual sua intencao de pagamento? (Dinheiro, PIX, Cartao de Credito)\n\n";
-    r += "Assim que responder, montaremos o orcamento completo para sua aprovacao.\n";
-    r += "_Ao aprovar o orcamento voce concorda com os Termos de Servico e Garantia da F5TEC._";
+    r += "*PRÓXIMOS PASSOS*\n";
+    r += "1️⃣ Quais itens você deseja *arrumar*? (apenas os com defeito, ou algum outro serviço?)\n";
+    r += "2️⃣ Qual sua *forma de pagamento*? (Dinheiro, PIX ou Cartão de Crédito)\n\n";
+    r += "Assim que responder, montamos o orçamento completo para sua aprovação.\n";
+    r += "_Ao aprovar o orçamento você concorda com os Termos de Serviço e Garantia da F5TEC._";
   } else {
-    r += "Aparelho liberado para entrega apos conferencia dos itens acima.";
+    r += "Aparelho liberado para entrega após conferência dos itens acima.";
   }
   return r;
 }
@@ -1023,55 +1164,56 @@ function secaoAgendamento() {
   if (document.getElementById("servicoEntrega").value !== "Sim") return "";
   const conf = radioValor("confirmacaoAgendamento"), novo = document.getElementById("dataHoraColetaTecnico").value.trim();
   let r = "*COLETA / ENTREGA*\n";
-  r += `- Endereco: ${document.getElementById("enderecoEntrega").value || "—"}\n`;
-  if (document.getElementById("pontoReferencia").value) r += `- Referencia: ${document.getElementById("pontoReferencia").value}\n`;
-  if (document.getElementById("linkLocalizacao").value) r += `- Localizacao: ${document.getElementById("linkLocalizacao").value}\n`;
-  r += `- Preferencia do cliente: ${formatarDataHoraLocal(document.getElementById("dataHoraRetirada").value) || "—"}\n`;
-  r += `- Confirmacao: ${conf}`;
-  if (conf === "Não" && novo) r += ` (sugerido: ${novo})`;
+  r += `- Endereço: *${document.getElementById("enderecoEntrega").value || "—"}*\n`;
+  if (document.getElementById("pontoReferencia").value) r += `- Referência: *${document.getElementById("pontoReferencia").value}*\n`;
+  if (document.getElementById("linkLocalizacao").value) r += `- Localização: ${document.getElementById("linkLocalizacao").value}\n`;
+  r += `- Preferência do cliente: *${formatarDataHoraLocal(document.getElementById("dataHoraRetirada").value.trim()) || "—"}*\n`;
+  r += `- Confirmação: *${conf}*`;
+  if (conf === "Não" && novo) r += ` (sugerido: *${novo}*)`;
   return r;
 }
 function secaoComodato() {
   if (!radioValor("comodato").startsWith("Sim")) return "";
   const disp = radioValor("disponibilidadeComodato");
-  let r = "*APARELHO RESERVA (COMODATO)*\n- Disponibilidade: " + (disp || "—");
+  let r = "*APARELHO RESERVA (COMODATO)*\n- Disponibilidade: *" + (disp || "—") + "*";
   if (disp === "Sim") {
-    r += `\n- Aparelho: ${document.getElementById("comodatoMarca").value} ${document.getElementById("comodatoModelo").value}`;
-    if (document.getElementById("comodatoObservacao").value) r += `\n- Estado: ${document.getElementById("comodatoObservacao").value}`;
+    const cor = document.getElementById("comodatoCor").value;
+    r += `\n- Aparelho: *${document.getElementById("comodatoMarca").value} ${document.getElementById("comodatoModelo").value}${cor ? ` (${cor})` : ""}*`;
+    if (document.getElementById("comodatoObservacao").value) r += `\n- Estado: *${document.getElementById("comodatoObservacao").value}*`;
     r += `\n- Fotos do comodato anexadas acima.`;
   }
   return r;
 }
 function gerarMensagemCheckin(link) {
-  const partes = ["*F5TEC - CHECK-IN*", secaoCliente(), secaoAparelho(), secaoTriagem(), secaoColetaCliente()];
+  const partes = ["*F5TEC — CHECK-IN*", secaoCliente(), secaoAparelho(), secaoTriagem(), secaoColetaCliente()];
   if (document.getElementById("aceiteTermos").checked) partes.push("*Termos de serviço:* Aceitos");
-  if (link) partes.push(`*LINK PARA O TECNICO CONTINUAR:*\n${link}`);
+  if (link) partes.push(`*LINK PARA O TÉCNICO CONTINUAR:*\n${link}`);
   return partes.filter(Boolean).join("\n\n");
 }
-function gerarMensagemTecnico() {
-  const partes = ["*F5TEC - DIAGNOSTICO TECNICO*", secaoAparelho(), secaoLaudoCompleto("hw_", "diagnostico")];
+function gerarMensagemTecnico(numeroOS) {
+  const partes = ["*F5TEC — DIAGNÓSTICO TÉCNICO*", secaoAparelho(), secaoLaudoCompleto("hw_", "diagnostico", numeroOS)];
   const ag = secaoAgendamento(); if (ag) partes.push(ag);
   const co = secaoComodato(); if (co) partes.push(co);
   return partes.filter(Boolean).join("\n\n");
 }
-function gerarMensagemOrcamento() {
-  const partes = ["*F5TEC - ORCAMENTO*", secaoCliente(), secaoAparelho(), secaoLaudoCompleto("hw_", "diagnostico"), gerarResumoRegistrosOS(), gerarResumoPagamento(), TERMOS_WHATSAPP];
+function gerarMensagemOrcamento(numeroOS) {
+  const partes = ["*F5TEC — ORÇAMENTO*", secaoCliente(), secaoAparelho(), secaoLaudoCompleto("hw_", "diagnostico", numeroOS), gerarResumoRegistrosOS(), gerarResumoPagamento(), TERMOS_WHATSAPP];
   const ag = secaoAgendamento(); if (ag) partes.push(ag);
   return partes.filter(Boolean).join("\n\n");
 }
-function gerarMensagemCheckout() {
-  const partes = ["*F5TEC - CHECKOUT*", secaoCliente(), secaoAparelho(), secaoLaudoCompleto("out_", "saida"), gerarResumoRegistrosOS(), gerarResumoPagamento()];
+function gerarMensagemCheckout(numeroOS) {
+  const partes = ["*F5TEC — CHECKOUT*", secaoCliente(), secaoAparelho(), secaoLaudoCompleto("out_", "saida", numeroOS), gerarResumoRegistrosOS(), gerarResumoPagamento()];
   const tipo = document.getElementById("tipoEntregaFinal").value;
   if (tipo) {
-    let e = `*ENTREGA FINAL*\n- Modalidade: ${tipo}`;
+    let e = `*ENTREGA FINAL*\n- Modalidade: *${tipo}*`;
     if (tipo === "Tele-busca e Entrega") {
-      e += `\n- Endereco: ${document.getElementById("enderecoEntregaFinal").value || "—"}`;
-      e += `\n- Data/hora: ${document.getElementById("dataHoraAgendamento").value || "—"}`;
+      e += `\n- Endereço: *${document.getElementById("enderecoEntregaFinal").value || "—"}*`;
+      e += `\n- Data/hora: *${document.getElementById("dataHoraAgendamento").value || "—"}*`;
     }
     partes.push(e);
   }
   if (radioValor("comodato").startsWith("Sim") && radioValor("disponibilidadeComodato") === "Sim") {
-    partes.push(`Aparelho reserva recolhido: ${document.getElementById("chkComodatoRecolhido").checked ? "Sim" : "Nao"}`);
+    partes.push(`Aparelho reserva recolhido: *${document.getElementById("chkComodatoRecolhido").checked ? "Sim" : "Não"}*`);
   }
   return partes.filter(Boolean).join("\n\n");
 }
@@ -1284,25 +1426,52 @@ async function aplicarEdicaoPDF() {
 
 async function enviarWhatsApp(event) {
   event.preventDefault();
+  if (enviando) return;
   validacaoIniciada = true;
-  if (!atualizarEstadoEnvio()) { await mostrarAlerta("Preencha todos os campos obrigatórios.", "Incompleto"); irParaPrimeiraPendencia(); return; }
+  const pronto = atualizarEstadoEnvio();
+  if (!pronto) {
+    await mostrarAlerta("Preencha todos os campos obrigatórios.", "Incompleto");
+    irParaPrimeiraPendencia();
+    return;
+  }
   const criticos = ["cliente","telefone","marca","modelo","cor","defeito"];
   if (criticos.some(id => !document.getElementById(id)?.value.trim())) {
     await mostrarAlerta("Dados do cliente/aparelho incompletos (aba 1).", "Incompleto");
     alternarModo("cliente", true); return;
   }
+  enviando = true;
   const btn = document.querySelector(".btn-submit"); btn.disabled = true;
   try {
-    let msg = "", status = "Em Diagnóstico";
-    if (modoAtual === "cliente") { const link = await encurtarUrl(gerarLinkCheckin("tecnico")); msg = gerarMensagemCheckin(link); status = "Em Diagnóstico"; }
-    else if (modoAtual === "tecnico") { msg = gerarMensagemTecnico(); const st = radioValor("statusReparo"); status = st === "Reprovado" ? "Negada" : "Em Orçamento"; }
-    else if (modoAtual === "os") { msg = gerarMensagemOrcamento(); const st = radioValor("statusReparo"); status = st === "Reprovado" ? "Negada" : "Aprovado"; }
-    else if (modoAtual === "checkout") { msg = gerarMensagemCheckout(); status = "Concluído"; }
+    let status = "Em Diagnóstico";
+    let numero = osSessaoNumero || salvarOS(status);
+    let msg = "";
+    if (modoAtual === "cliente") {
+      status = "Em Diagnóstico";
+      numero = salvarOS(status);
+      const link = await encurtarUrl(gerarLinkCheckin("tecnico"));
+      msg = gerarMensagemCheckin(link);
+    }
+    else if (modoAtual === "tecnico") {
+      const st = radioValor("statusReparo");
+      status = st === "Reprovado" ? "Negada" : "Em Orçamento";
+      numero = salvarOS(status);
+      msg = gerarMensagemTecnico(numero);
+    }
+    else if (modoAtual === "os") {
+      const st = radioValor("statusReparo");
+      status = st === "Reprovado" ? "Negada" : "Aprovado";
+      numero = salvarOS(status);
+      msg = gerarMensagemOrcamento(numero);
+    }
+    else if (modoAtual === "checkout") {
+      status = "Concluído";
+      numero = salvarOS(status);
+      msg = gerarMensagemCheckout(numero);
+    }
     if (!msg) { await mostrarAlerta("Não foi possível montar a mensagem."); return; }
-    const num = salvarOS(status);
     if (modoAtual === "checkout") {
       const esc = await mostrarOpcoesDialogo(
-        `OS ${num} concluída.\nDeseja gerar o PDF agora?`,
+        `OS ${numero} concluída.\nDeseja gerar o PDF agora?`,
         "OS Concluída",
         [
           { valor:"a4", label:"PDF A4", primario:true },
@@ -1311,20 +1480,24 @@ async function enviarWhatsApp(event) {
           { valor:"cancel", label:"Só WhatsApp" }
         ]
       );
-      if (esc === "a4") await gerarPDFA4(num);
-      else if (esc === "58mm") await gerarPDFTermico(num, 58);
-      else if (esc === "60mm") await gerarPDFTermico(num, 60);
+      if (esc === "a4") await gerarPDFA4(numero);
+      else if (esc === "58mm") await gerarPDFTermico(numero, 58);
+      else if (esc === "60mm") await gerarPDFTermico(numero, 60);
     }
     const fotos = obterFotosEtapaAtual();
     await enviarMensagemComFotos(NUMERO_CLIENTE, msg, fotos);
-  } finally { btn.disabled = false; atualizarEstadoEnvio(); }
+  } finally {
+    enviando = false;
+    btn.disabled = false;
+    atualizarEstadoEnvio();
+  }
 }
 
 function carregarOSNoFormulario(numero) {
   const os = getHistorico().find(o => o.numero === numero);
   if (!os) { mostrarAlerta("OS não encontrada."); return; }
   osSessaoNumero = numero; abasProtegidasDesbloqueadas = true;
-  const c = os.cliente || {}, a = os.aparelho || {}, e = os.entrega || {};
+  const c = os.cliente || {}, a = os.aparelho || {}, e = os.entrega || {}, co = os.comodato || {};
   const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || ""; };
   set("cliente", c.nome); set("cpf", c.cpf); set("telefone", c.telefone); set("telefoneAdicional", c.telefoneAdicional);
   set("marca", a.marca); set("modelo", a.modelo); set("cor", a.cor); set("tipo", a.tipo);
@@ -1333,6 +1506,13 @@ function carregarOSNoFormulario(numero) {
   set("servicoEntrega", e.servico); atualizarCamposEntrega();
   set("enderecoEntrega", e.endereco); set("pontoReferencia", e.referencia); set("linkLocalizacao", e.link); set("dataHoraRetirada", e.dataHora);
   atualizarDiaSemanaRetirada();
+  if (co.solicitado) {
+    const inpSol = document.querySelector('input[name="comodato"][value="Sim (Sujeito a disponibilidade)"]');
+    if (inpSol) inpSol.checked = true;
+    if (co.disponivel) { const inpD = document.querySelector('input[name="disponibilidadeComodato"][value="Sim"]'); if (inpD) inpD.checked = true; }
+    atualizarCamposComodato();
+    set("comodatoMarca", co.marca); set("comodatoModelo", co.modelo); set("comodatoCor", co.cor); set("comodatoObservacao", co.observacao);
+  }
   itensTriagem.forEach(i => { const v = os.triagem?.[i.id]; if (!v || v === "Não informado") return; const inp = document.querySelector(`input[name="${i.id}"][value="${CSS.escape(v)}"]`); if (inp) inp.checked = true; });
   registrosOS = (os.registros || []).map(r => ({ ...r }));
   proximoRegistroId = registrosOS.reduce((m, r) => typeof r.id === "number" ? Math.max(m, r.id) : m, 0) + 1;
@@ -1424,5 +1604,4 @@ function init() {
   alternarModo("cliente", false); carregarDadosDaURL(); atualizarDiaSemanaRetirada(); atualizarEstadoEnvio();
 }
 
-// Inicialização segura após carregamento do DOM e dependências (defer)
 document.addEventListener("DOMContentLoaded", init);

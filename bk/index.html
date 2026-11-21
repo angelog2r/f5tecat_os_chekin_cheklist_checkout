@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#121212">
+  <meta name="description" content="Sistema de Gestão de Ordens de Serviço - F5TEC Assistência Técnica">
+  <title>F5TEC | Sistema de Gestão de OS</title>
+
+  <!-- Bibliotecas Externas -->
+  <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
+
+  <!-- Folha de Estilos -->
+  <link rel="stylesheet" href="./style.css?v=1">
+</head>
+<body>
+
+<header>
+  <img class="header-logo" src="./1777128795714.png" alt="Logo F5TEC" onerror="this.style.display='none'">
+  <h1>F5TEC Assistência Técnica</h1>
+  <p>Sistema de Gestão de Ordens de Serviço</p>
+</header>
+
+<main class="container">
+  <!-- NAVEGAÇÃO DE ABAS -->
+  <nav class="mode-switch" role="tablist" aria-label="Etapas do Atendimento">
+    <button type="button" class="mode-btn active" id="btnModoCliente" role="tab" aria-selected="true" aria-controls="blocoDadosOS" onclick="alternarModo('cliente')">1. Cadastro</button>
+    <button type="button" class="mode-btn" id="btnModoTecnico" role="tab" aria-selected="false" aria-controls="blocoTecnico" onclick="alternarModo('tecnico')">2. Diagnóstico</button>
+    <button type="button" class="mode-btn" id="btnModoOS" role="tab" aria-selected="false" aria-controls="blocoOS" onclick="alternarModo('os')" disabled>3. Orçamento</button>
+    <button type="button" class="mode-btn" id="btnModoCheckout" role="tab" aria-selected="false" aria-controls="blocoCheckout" onclick="alternarModo('checkout')" disabled>4. Checkout</button>
+    <button type="button" class="mode-btn" id="btnModoHistorico" role="tab" aria-selected="false" aria-controls="blocoHistorico" onclick="alternarModo('historico')">5. Histórico</button>
+  </nav>
+
+  <!-- DIALOG DE ACESSO RESTRITO -->
+  <dialog id="dialogAcessoProtegido" role="dialog" aria-modal="true">
+    <form id="formAcessoProtegido">
+      <h2>Acesso Restrito</h2>
+      <div class="field">
+        <label for="senhaAbas">Digite a senha</label>
+        <input type="password" id="senhaAbas" required autocomplete="current-password">
+      </div>
+      <p id="erroSenhaAbas" class="hidden text-danger" role="alert">Senha incorreta.</p>
+      <div class="dialog-actions">
+        <button type="button" id="cancelarSenha">Cancelar</button>
+        <button type="submit" class="btn-primary">Acessar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- DIALOG GENÉRICO -->
+  <dialog id="dialogoModal">
+    <form method="dialog">
+      <h3 id="dialogoTitulo">Aviso</h3>
+      <p id="dialogoMensagem"></p>
+      <div class="dialog-actions" id="dialogoBotoes"></div>
+    </form>
+  </dialog>
+
+  <!-- EDITOR DE PDF -->
+  <dialog id="dialogoEditarPDF">
+    <form method="dialog" onsubmit="event.preventDefault();">
+      <h3 id="editTitulo">Editar OS antes do PDF</h3>
+      <div class="edit-scroll">
+        <h4>Cliente</h4>
+        <div class="field"><label for="editCliente">Nome</label><input type="text" id="editCliente"></div>
+        <div class="grid-2">
+          <div class="field"><label for="editCpf">CPF</label><input type="text" id="editCpf"></div>
+          <div class="field"><label for="editTelefone">Telefone</label><input type="text" id="editTelefone"></div>
+        </div>
+        <div class="field"><label for="editEndereco">Endereço</label><input type="text" id="editEndereco"></div>
+
+        <h4>Aparelho</h4>
+        <div class="grid-2">
+          <div class="field"><label for="editMarca">Marca</label><input type="text" id="editMarca"></div>
+          <div class="field"><label for="editModelo">Modelo</label><input type="text" id="editModelo"></div>
+        </div>
+        <div class="grid-2">
+          <div class="field"><label for="editCor">Cor</label><input type="text" id="editCor"></div>
+          <div class="field"><label for="editTipo">Tipo</label><input type="text" id="editTipo"></div>
+        </div>
+        <div class="field"><label for="editDefeito">Defeito Relatado (Reclamação)</label><textarea id="editDefeito" style="min-height:50px;"></textarea></div>
+        <div class="field"><label for="editSolucao">Itens Arrumados / Solução</label><textarea id="editSolucao" style="min-height:50px;"></textarea></div>
+        <div class="field"><label for="editObsPDF">Observação extra para o PDF</label><textarea id="editObsPDF" style="min-height:60px;"></textarea></div>
+
+        <h4>Pagamento</h4>
+        <div class="field">
+          <label for="editFormaPagamento">Forma de Pagamento</label>
+          <select id="editFormaPagamento">
+            <option value="">Não informada</option>
+            <option value="Dinheiro">Dinheiro</option>
+            <option value="PIX">PIX</option>
+            <option value="Cartão de Crédito">Cartão de Crédito</option>
+          </select>
+        </div>
+
+        <h4>Formato de Saída</h4>
+        <div class="radio-group">
+          <label class="radio-pill option-positive"><input type="radio" name="formatoPDF" value="a4" checked> A4</label>
+          <label class="radio-pill"><input type="radio" name="formatoPDF" value="58mm"> Térmica 58mm</label>
+          <label class="radio-pill"><input type="radio" name="formatoPDF" value="60mm"> Térmica 60mm</label>
+        </div>
+      </div>
+      <div class="dialog-actions">
+        <button type="button" onclick="fecharEditorPDF()">Cancelar</button>
+        <button type="button" class="btn-primary" onclick="aplicarEdicaoPDF()">Salvar e Gerar PDF</button>
+      </div>
+    </form>
+  </dialog>
+
+  <form id="formOS" novalidate onsubmit="enviarWhatsApp(event)">
+    <div id="validationSummary" class="validation-summary hidden" role="alert">
+      <span id="validationMessage"></span>
+      <button type="button" id="irParaPendencia">Ir para o campo</button>
+    </div>
+
+    <!-- ABA 1: CLIENTE -->
+    <section class="card" id="blocoDadosOS" role="tabpanel">
+      <h2>1. Dados do Cliente e do Aparelho</h2>
+      <div class="field"><label for="cliente">Nome Completo *</label><input type="text" id="cliente" required autocomplete="name" placeholder="João da Silva"></div>
+      <div class="field"><label for="cpf">CPF *</label><input type="text" id="cpf" required inputmode="numeric" maxlength="14" pattern="(?:\d{11}|\d{3}\.\d{3}\.\d{3}-\d{2})" placeholder="000.000.000-00"></div>
+      <div class="field"><label for="telefone">Telefone / WhatsApp *</label><input type="tel" id="telefone" required inputmode="tel" pattern="(?:\D*\d){10,13}\D*" placeholder="(11) 99999-9999"></div>
+      <div class="field"><label for="telefoneAdicional">Telefone Adicional</label><input type="tel" id="telefoneAdicional" inputmode="tel" pattern="(?:\D*\d){10,13}\D*" placeholder="(11) 99999-9999"></div>
+      <div class="grid-2">
+        <div class="field"><label for="marca">Marca *</label><input type="text" id="marca" required placeholder="Samsung"></div>
+        <div class="field"><label for="modelo">Modelo *</label><input type="text" id="modelo" required placeholder="Galaxy A52s"></div>
+      </div>
+      <div class="grid-2">
+        <div class="field"><label for="cor">Cor *</label><input type="text" id="cor" required placeholder="Preto"></div>
+        <div class="field"><label for="tipo">Tipo *</label>
+          <select id="tipo" required><option value="" selected disabled>Selecione</option><option>Smartphone</option><option>Tablet</option><option>Outro Eletrônico</option></select>
+        </div>
+      </div>
+      <div class="field"><label for="possuiAcessorios">Deixou acessórios? *</label>
+        <select id="possuiAcessorios" required><option value="" selected disabled>Selecione</option><option>Sim</option><option>Não</option></select>
+      </div>
+      <div class="field hidden" id="campoListaAcessorios"><label for="acessorios">Quais acessórios? *</label><input type="text" id="acessorios" placeholder="Capa, chip, cartão"></div>
+      <div class="field">
+        <label for="servicoEntrega">Deseja Tele-busca e Entrega? *</label>
+        <select id="servicoEntrega" required onchange="atualizarCamposEntrega()"><option value="" selected disabled>Selecione</option><option>Não</option><option>Sim</option></select>
+        <small class="field-note warn">⚠ Frete R$ 1,00/km, cobrado apenas se o reparo não for efetuado.</small>
+      </div>
+      <div class="field hidden" id="camposEntrega">
+        <label for="enderecoEntrega">Endereço Completo *</label><input type="text" id="enderecoEntrega" placeholder="Rua, N, Bairro, Cidade">
+        <label for="pontoReferencia" style="margin-top:8px;">Ponto de Referência</label><input type="text" id="pontoReferencia" placeholder="Próximo à padaria X">
+        <div class="tutorial-maps">Como copiar: Maps → Bússola → Compartilhar → Copiar link</div>
+        <label for="linkLocalizacao" style="margin-top:8px;">Link da Localização</label><input type="text" id="linkLocalizacao" placeholder="Cole o link do Google Maps">
+        <label for="dataHoraRetirada" style="margin-top:8px;">Dia e Horário de Retirada *</label><input type="text" id="dataHoraRetirada" placeholder="Segunda, às 14h">
+      </div>
+      <div class="field">
+        <label for="senha">Senha de Desbloqueio *</label>
+        <input type="text" id="senha" required placeholder="Senha ou desenhe abaixo">
+        <div class="pattern-helper">
+          <small>Senha de desenho? Toque na ordem:</small>
+          <div class="pattern-grid">
+            <button type="button" class="dot-btn" onclick="addPonto(1,this)">1</button>
+            <button type="button" class="dot-btn" onclick="addPonto(2,this)">2</button>
+            <button type="button" class="dot-btn" onclick="addPonto(3,this)">3</button>
+            <button type="button" class="dot-btn" onclick="addPonto(4,this)">4</button>
+            <button type="button" class="dot-btn" onclick="addPonto(5,this)">5</button>
+            <button type="button" class="dot-btn" onclick="addPonto(6,this)">6</button>
+            <button type="button" class="dot-btn" onclick="addPonto(7,this)">7</button>
+            <button type="button" class="dot-btn" onclick="addPonto(8,this)">8</button>
+            <button type="button" class="dot-btn" onclick="addPonto(9,this)">9</button>
+          </div>
+          <button type="button" class="btn-link" onclick="limparPadrao()">Limpar</button>
+        </div>
+      </div>
+      <div class="field"><label for="defeito">Defeito Relatado *</label><textarea id="defeito" required minlength="5" placeholder="Descreva o defeito"></textarea></div>
+      <div class="field"><label for="observacao">Observação Adicional</label><input type="text" id="observacao" placeholder="Avisos importantes"></div>
+    </section>
+
+    <!-- ABA 1.2: TRIAGEM -->
+    <section class="card" id="blocoTriagem" role="tabpanel">
+      <h2>Triagem Inicial (Cliente)</h2>
+      <div id="perguntasTriagem"></div>
+      <div id="avisoComodatoCliente" class="field-note hidden" style="margin-top:10px;padding:10px;background:#1e3a8a;border:1px solid #3b82f6;border-radius:6px;color:#dbeafe;">
+        ℹ️ <strong>A assistência entrará em contato</strong> para confirmar a disponibilidade do aparelho reserva.
+      </div>
+    </section>
+
+    <!-- ABA 1.3: TERMOS -->
+    <section class="card" id="blocoTermos" role="tabpanel">
+      <h2>Termos de Serviço e Garantia</h2>
+      <div class="terms-box">
+        <p style="text-align:center;font-weight:bold;color:#fff;">TERMOS DE SERVIÇO E GARANTIA - F5TEC</p>
+        <strong>2 CONDIÇÕES GERAIS DE SERVIÇO</strong><br><br>
+        <strong>2.1 Pré-Orçamento:</strong> Qualquer valor antes da análise é estimado. O orçamento oficial só sai após análise completa. Se não aprovado, cobra-se taxa de diagnóstico.<br><br>
+        <strong>2.2 Prazos e Abandono:</strong> Retirada em até 30 dias (acréscimo de 10%/mês). Não retirada em 90 dias implica em venda por abandono (Art. 1.263 Cód. Civil).<br><br>
+        <strong>2.3 Dados e Senhas:</strong> Não nos responsabilizamos por perda de dados. Formatação apaga tudo. Cliente deve desativar bloqueios (iCloud/Google) e fornecer senha.<br><br>
+        <strong>2.4 Placa Lógica:</strong> Reparos em placa podem causar morte súbita.<br><br>
+        <strong>2.5 Estética:</strong> Aparelhos podem descascar tinta ao abrir. F5TEC imune ao prejuízo estético.<br><br>
+        <strong>2.6 Líquidos:</strong> Aparelhos molhados podem ter falhas secundárias.<br><br>
+        <strong>2.7 Acessórios:</strong> Não nos responsabilizamos por capas, películas, chips ou cartões.<br><br>
+        <strong>2.8 Logística:</strong> Coleta/entrega isenta se aprovado. Se reprovado, cobra-se deslocamento (R$1/km).<br><br>
+        <strong>2.9 Comodato:</strong> Aparelho reserva deve ser devolvido nas mesmas condições. Danos são responsabilidade do cliente.<br><br>
+        <strong>3 TERMO DE GARANTIA</strong><br><br>
+        <strong>3.1 Cobertura:</strong> 90 dias (Art. 26 CDC), cobrindo apenas a peça/serviço descrito.<br><br>
+        <strong>3.2 Perda de Garantia:</strong> Quedas, trincados, umidade, violação de lacre, conserto por terceiros ou apps maliciosos.<br><br>
+        <strong>3.3 Observações:</strong> Abertura anula resistência à água. Garantia não cobre software/limpeza. Prazo de análise: 7 dias úteis.<br><br>
+        <strong>4 ACEITE LEGAL</strong><br><br>
+        O envio digital e pagamento/retirada constituem ACEITE DIGITAL irrevogável de todas as condições, substituindo assinatura física.
+      </div>
+      <label class="checkbox-row" for="aceiteTermos">
+        <input type="checkbox" id="aceiteTermos" required>
+        <span>Li e concordo integralmente com os Termos de Serviço e Garantia.</span>
+      </label>
+    </section>
+
+    <!-- ABA 2: DIAGNÓSTICO -->
+    <section class="card hidden" id="blocoTecnico" role="tabpanel">
+      <h2>2. Checklist e Diagnóstico de Entrada</h2>
+
+      <div id="areaAgendamentoColeta" class="field hidden" style="background:#27272a;padding:12px;border-radius:8px;border:1px solid var(--warning);">
+        <h3 style="margin-top:0;font-size:0.95rem;color:#fcd34d;">Confirmar Coleta / Entrega</h3>
+        <div class="laudo-tecnico">
+          <strong>Cliente:</strong> <span id="clienteAgendamento">—</span><br>
+          <strong>Telefone:</strong> <span id="telefoneAgendamento">—</span><br>
+          <strong>Endereço:</strong> <span id="enderecoAgendamento">—</span><br>
+          <strong>Referência:</strong> <span id="referenciaAgendamento">—</span><br>
+          <strong>Localização:</strong> <a id="linkAgendamento" class="hidden" target="_blank" rel="noopener">Abrir Maps</a> <span id="linkAgendamentoTexto">—</span><br>
+          <strong>Horário preferido:</strong> <span id="preferenciaAgendamento">—</span>
+        </div>
+        <fieldset class="field" id="confirmacaoAgendamentoField">
+          <legend>O horário do cliente está disponível? *</legend>
+          <div class="radio-group">
+            <label class="radio-pill option-positive"><input type="radio" name="confirmacaoAgendamento" value="Sim" onchange="atualizarCamposAgendamento()"> Sim, confirmar</label>
+            <label class="radio-pill option-negative"><input type="radio" name="confirmacaoAgendamento" value="Não" onchange="atualizarCamposAgendamento()"> Não, sugerir outro</label>
+          </div>
+        </fieldset>
+        <div class="field hidden" id="campoNovoAgendamento">
+          <label for="dataHoraColetaTecnico">Nova data e horário *</label>
+          <input type="text" id="dataHoraColetaTecnico" placeholder="Terça, às 15h">
+        </div>
+      </div>
+
+      <div id="areaComodato" class="comodato-area hidden">
+        <h3 style="margin-top:0;font-size:0.95rem;color:#fff;border-bottom:1px solid var(--border);padding-bottom:8px;">Aparelho Reserva (Comodato)</h3>
+        <div class="field">
+          <label>Há disponibilidade? *</label>
+          <div class="radio-group">
+            <label class="radio-pill option-positive"><input type="radio" name="disponibilidadeComodato" value="Sim" onchange="atualizarCamposComodato()"> Sim</label>
+            <label class="radio-pill option-negative"><input type="radio" name="disponibilidadeComodato" value="Não" onchange="atualizarCamposComodato()"> Não</label>
+          </div>
+        </div>
+        <div id="camposComodato" class="hidden">
+          <div class="grid-2">
+            <div class="field"><label for="comodatoMarca">Marca *</label><input type="text" id="comodatoMarca"></div>
+            <div class="field"><label for="comodatoModelo">Modelo *</label><input type="text" id="comodatoModelo"></div>
+          </div>
+          <div class="field"><label for="comodatoObservacao">Estado / Obs. *</label><input type="text" id="comodatoObservacao"></div>
+          <label style="margin-top:8px;">Fotos * (enviadas no WhatsApp)</label>
+          <div class="grid-2">
+            <div><label for="comodatoFotoFrente" style="font-size:0.8rem;font-weight:normal;">Frente</label><input type="file" id="comodatoFotoFrente" accept="image/*" capture="environment"></div>
+            <div><label for="comodatoFotoVerso" style="font-size:0.8rem;font-weight:normal;">Verso</label><input type="file" id="comodatoFotoVerso" accept="image/*" capture="environment"></div>
+            <div><label for="comodatoFotoIMEI" style="font-size:0.8rem;font-weight:normal;">IMEI</label><input type="file" id="comodatoFotoIMEI" accept="image/*" capture="environment"></div>
+          </div>
+          <p style="color:#fcd34d;font-size:0.8rem;margin-top:10px;font-weight:bold;">⚠ Recolher o aparelho no Checkout.</p>
+        </div>
+      </div>
+
+      <div class="laudo-tecnico" id="tituloAparelhoCliente" style="margin-top:16px;">
+        <div style="font-size:0.78rem;text-transform:uppercase;color:#93c5fd;font-weight:700;">Aparelho em Bancada</div>
+        <div id="tituloAparelhoConteudo" style="margin-top:4px;"></div>
+      </div>
+
+      <div class="field" id="fotosEntrada" style="margin-top:16px;">
+        <label>Fotos de Entrada * (6 fotos)</label>
+        <div class="grid-2">
+          <div><label for="fotoEntrada1">Foto 1</label><input type="file" id="fotoEntrada1" accept="image/*" required></div>
+          <div><label for="fotoEntrada2">Foto 2</label><input type="file" id="fotoEntrada2" accept="image/*" required></div>
+          <div><label for="fotoEntrada3">Foto 3</label><input type="file" id="fotoEntrada3" accept="image/*" required></div>
+          <div><label for="fotoEntrada4">Foto 4</label><input type="file" id="fotoEntrada4" accept="image/*" required></div>
+          <div><label for="fotoEntrada5">Foto 5</label><input type="file" id="fotoEntrada5" accept="image/*" required></div>
+          <div><label for="fotoEntrada6">Foto 6</label><input type="file" id="fotoEntrada6" accept="image/*" required></div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="fotosApp">Fotos Registradas no App?</label>
+        <select id="fotosApp"><option>Sim (Fotos inseridas na OS)</option><option>Pendente</option></select>
+      </div>
+
+      <div id="areaChecklistTecnico">
+        <button type="button" class="btn-Quick ok" onclick="marcarTodosOK('hw'); atualizarEstadoEnvio();">Marcar Todos "OK"</button>
+        <button type="button" class="btn-Quick" onclick="marcarTodosNaoTestados('hw'); atualizarEstadoEnvio();">Aparelho Não Liga (Não Testado)</button>
+        <div id="listaHardware"></div>
+      </div>
+
+      <div id="areaDiagnostico" class="hidden" style="margin-top:20px;">
+        <h2 style="border-top:1px solid var(--border);padding-top:14px;color:#fff;">Laudo Preliminar</h2>
+        <div id="conteudoDiagnostico"></div>
+      </div>
+
+      <fieldset class="field" id="statusReparoField" style="margin-top:16px;border-top:1px solid var(--border);padding-top:14px;">
+        <legend>Resultado do Diagnóstico *</legend>
+        <div class="radio-group">
+          <label class="radio-pill option-positive"><input type="radio" name="statusReparo" value="Aprovado" onchange="atualizarStatusReparo()"> Aprovado</label>
+          <label class="radio-pill option-negative"><input type="radio" name="statusReparo" value="Reprovado" onchange="atualizarStatusReparo()"> Reprovado</label>
+          <label class="radio-pill option-indecisive"><input type="radio" name="statusReparo" value="Pendente" onchange="atualizarStatusReparo()"> Pendente</label>
+        </div>
+      </fieldset>
+    </section>
+
+    <!-- ABA 3: ORÇAMENTO -->
+    <section class="card hidden" id="blocoOS" role="tabpanel">
+      <h2>3. Orçamento e Financeiro</h2>
+
+      <div id="avisoReprovado" class="aviso-taxas hidden">
+        <strong>⚠️ Reparo Não Autorizado</strong>
+        <p>Cobre as taxas abaixo antes de finalizar:</p>
+        <ul><li><strong>Taxa de Diagnóstico: R$ 50,00</strong></li><li><strong>Taxa de Deslocamento: R$ 1,00/km</strong></li></ul>
+      </div>
+
+      <div class="registro-grid">
+        <div class="field"><label for="categoriaRegistro">Categoria</label>
+          <select id="categoriaRegistro"><option>Peça</option><option>Serviço</option></select>
+        </div>
+        <div class="field"><label for="quantidadeRegistro">Qtd.</label><input type="text" id="quantidadeRegistro" inputmode="numeric" pattern="[0-9]+" value="1" maxlength="6"></div>
+        <div class="field registro-descricao"><label for="descricaoRegistro">Descrição</label><input type="text" id="descricaoRegistro" placeholder="Troca de tela"></div>
+        <div class="field"><label for="valorRegistro">Valor Unitário</label><input type="text" id="valorRegistro" inputmode="decimal" placeholder="0,00"></div>
+        <div class="field"><label>&nbsp;</label><button type="button" class="btn-adicionar" onclick="adicionarRegistroOS()">Adicionar</button></div>
+      </div>
+
+      <div class="field hidden" id="blocoTaxasReprovado" style="margin-top:10px;background:#27272a;padding:12px;border-radius:6px;">
+        <label>Taxas (somente em caso de reprovação)</label>
+        <label class="checkbox-row" style="margin-bottom:8px;"><input type="checkbox" id="chkTaxaDeslocamento" onchange="toggleTaxaDeslocamento()"><span>Taxa de Deslocamento (R$ 1,00/km)</span></label>
+        <div class="field hidden" id="campoDistanciaDeslocamento" style="margin-left:28px;margin-bottom:8px;">
+          <label for="inputDistancia" style="font-size:0.8rem;">Distância (km)</label>
+          <input type="number" id="inputDistancia" value="1" min="1" step="1" oninput="atualizarTaxaDeslocamento()">
+        </div>
+        <label class="checkbox-row"><input type="checkbox" id="chkTaxaDiagnostico" onchange="adicionarTaxaDiagnostico()"><span>Taxa de Diagnóstico (R$ 50,00)</span></label>
+      </div>
+
+      <h2>Peças</h2>
+      <div class="lista-registros" id="listaPecas"><small class="text-muted">Nenhuma peça.</small></div>
+      <h2>Serviços</h2>
+      <div class="lista-registros" id="listaServicos"><small class="text-muted">Nenhum serviço.</small></div>
+
+      <div class="resumo-registros">
+        <div><span>Total peças</span><strong id="totalPecas">R$ 0,00</strong></div>
+        <div><span>Total serviços</span><strong id="totalServicos">R$ 0,00</strong></div>
+        <div class="total-geral"><span>Total geral</span><strong id="totalGeral">R$ 0,00</strong></div>
+      </div>
+
+      <h2 style="margin-top:18px;">Forma de Pagamento</h2>
+      <div class="registro-grid">
+        <div class="field"><label for="formaPagamento">Forma</label>
+          <select id="formaPagamento" required><option value="" selected disabled>Selecione</option><option>Dinheiro</option><option>PIX</option><option>Cartão de Crédito</option></select>
+        </div>
+        <div class="field hidden" id="campoParcelas"><label for="parcelasCartao">Parcelas</label><select id="parcelasCartao"></select></div>
+        <div class="field registro-descricao hidden" id="campoTaxaCartao"><label for="taxaCartao">Taxa da Maquininha (%)</label><input type="text" id="taxaCartao" inputmode="decimal" placeholder="12,5"></div>
+      </div>
+      <div class="field hidden" id="campoDinheiro">
+        <label>Precisa de troco?</label>
+        <select id="precisaTroco" onchange="toggleTroco()"><option>Não</option><option>Sim</option></select>
+        <div class="field hidden" id="campoValorTroco" style="margin-top:8px;"><label for="valorTroco">Troco para quanto?</label><input type="text" id="valorTroco" inputmode="decimal" placeholder="100,00"></div>
+      </div>
+      <div id="avisoPix" class="field-note hidden" style="margin-top:10px;background:#1e3a8a;border:1px solid #3b82f6;padding:12px;border-radius:6px;color:#dbeafe;">🔑 <strong>PIX:</strong> +55 51 99737 1944</div>
+
+      <div class="resumo-registros">
+        <div><span>Forma</span><strong id="resumoFormaPagamento">—</strong></div>
+        <div id="linhaParcelas" class="hidden"><span>Parcelas</span><strong id="resumoParcelas">—</strong></div>
+        <div id="linhaAcrescimo" class="hidden"><span>Acréscimo</span><strong id="resumoAcrescimo">R$ 0,00</strong></div>
+        <div id="linhaTroco" class="hidden"><span>Troco para</span><strong id="resumoTroco">—</strong></div>
+        <div class="total-geral"><span>Total a pagar</span><strong id="totalComPagamento">R$ 0,00</strong></div>
+      </div>
+      <div style="margin-top:20px;border-top:1px solid var(--border);padding-top:16px;">
+        <button type="button" class="btn-action" id="btnAprovarFinanceiro" onclick="aprovarFinanceiro()" disabled>✅ Aprovar Orçamento e Liberar Checkout</button>
+        <small class="field-note" style="text-align:center;margin-top:8px;">Checkout só libera após aprovação.</small>
+      </div>
+    </section>
+
+    <!-- ABA 4: CHECKOUT -->
+    <section class="card hidden" id="blocoCheckout" role="tabpanel">
+      <h2>4. Checkout de Saída</h2>
+      <div class="laudo-tecnico"><strong>Laudo de Entrega:</strong> Aparelho testado e pronto. Recolha o reserva se aplicável.</div>
+      <div id="areaRecolherComodato" class="field hidden" style="background:#450a0a;border:1px solid #7f1d1d;padding:12px;border-radius:8px;margin-bottom:16px;">
+        <strong style="color:#fca5a5;">⚠️ Recolhimento de Comodato</strong>
+        <label class="checkbox-row" style="margin-top:8px;"><input type="checkbox" id="chkComodatoRecolhido" required><span>Aparelho reserva recolhido em perfeito estado.</span></label>
+      </div>
+      <div class="field" id="fotosSaida">
+        <label>Fotos de Saída * (7 fotos)</label>
+        <div class="grid-2">
+          <div><label for="fotoSaida1">Foto 1</label><input type="file" id="fotoSaida1" accept="image/*" required></div>
+          <div><label for="fotoSaida2">Foto 2</label><input type="file" id="fotoSaida2" accept="image/*" required></div>
+          <div><label for="fotoSaida3">Foto 3</label><input type="file" id="fotoSaida3" accept="image/*" required></div>
+          <div><label for="fotoSaida4">Foto 4</label><input type="file" id="fotoSaida4" accept="image/*" required></div>
+          <div><label for="fotoSaida5">Foto 5</label><input type="file" id="fotoSaida5" accept="image/*" required></div>
+          <div><label for="fotoSaida6">Foto 6</label><input type="file" id="fotoSaida6" accept="image/*" required></div>
+          <div><label for="fotoSaida7">Foto 7 (IMEI)</label><input type="file" id="fotoSaida7" accept="image/*" required></div>
+        </div>
+      </div>
+      <div id="areaChecklistSaida">
+        <button type="button" class="btn-Quick ok" onclick="marcarTodosOK('out'); atualizarEstadoEnvio();">Marcar Todos "OK"</button>
+        <div id="listaHardwareSaida"></div>
+      </div>
+      <div class="field" style="margin-top:16px;">
+        <label for="tipoEntregaFinal">Como o cliente vai receber? *</label>
+        <select id="tipoEntregaFinal" onchange="atualizarCamposEntregaFinal()">
+          <option value="">Selecione</option><option>Retirada na loja</option><option>Tele-busca e Entrega</option>
+        </select>
+      </div>
+      <div id="camposEntregaFinal" class="hidden">
+        <label class="checkbox-row" style="margin-bottom:12px;"><input type="checkbox" id="chkMesmoEndereco" onchange="copiarEnderecoColeta()"><span>Usar o mesmo endereço da coleta</span></label>
+        <div class="field"><label for="enderecoEntregaFinal">Endereço de Entrega *</label><input type="text" id="enderecoEntregaFinal" placeholder="Rua, N, Bairro, Cidade"></div>
+        <div class="field"><label for="dataHoraAgendamento">Data e Horário *</label><input type="text" id="dataHoraAgendamento" placeholder="Segunda, às 14h"></div>
+      </div>
+    </section>
+
+    <!-- ABA 5: HISTÓRICO -->
+    <section class="card hidden" id="blocoHistorico" role="tabpanel">
+      <h2>5. Histórico de Ordens</h2>
+      <div class="historico-toolbar">
+        <button type="button" class="btn-backup" onclick="exportarBackup()">💾 Backup</button>
+        <button type="button" class="btn-import" onclick="document.getElementById('inputImportar').click()">📂 Importar</button>
+        <input type="file" id="inputImportar" accept=".json" style="display:none" onchange="importarBackup(this.files[0]); this.value='';">
+      </div>
+      <div class="filtro-status" id="filtroStatus"></div>
+      <div id="listaHistorico"></div>
+      <div class="field" style="margin-top:16px;border-top:1px solid var(--border);padding-top:16px;">
+        <button type="button" class="btn-action" style="background:#7f1d1d;" onclick="limparHistorico()">🗑️ Limpar Histórico</button>
+      </div>
+    </section>
+
+    <!-- BOTÃO DE ENVIO -->
+    <button type="submit" class="btn-submit">
+      <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M13.601 2.326A7.85 7.85 0 0 0 7.994.004C3.627.004.074 3.557.072 7.924c0 1.393.364 2.75 1.057 3.945L.001 16l4.235-1.11a7.94 7.94 0 0 0 3.8.968h.003c4.367 0 7.92-3.553 7.922-7.92a7.87 7.87 0 0 0-2.36-5.612z"/></svg>
+      <span id="textoBotaoEnvio" aria-live="polite">Enviar para WhatsApp</span>
+    </button>
+  </form>
+
+  <button type="button" class="btn-novo" onclick="resetarAtendimento()">🔄 Novo Atendimento</button>
+</main>
+
+<script src="./script.js?v=1" defer></script>
+</body>
+</html>

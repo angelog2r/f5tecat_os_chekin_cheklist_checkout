@@ -167,7 +167,16 @@
       <div class="field hidden" id="camposEntrega">
         <label for="enderecoEntrega">Endereço Completo *</label><input type="text" id="enderecoEntrega" placeholder="Rua, N, Bairro, Cidade">
         <label for="pontoReferencia" style="margin-top:8px;">Ponto de Referência</label><input type="text" id="pontoReferencia" placeholder="Próximo à padaria X">
-        <div class="tutorial-maps">Como copiar: Maps → Bússola → Compartilhar → Copiar link</div>
+        <div class="maps-helper">
+          <a href="https://www.google.com/maps" target="_blank" rel="noopener noreferrer" class="btn-maps">📍 Abrir Google Maps</a>
+          <div class="maps-steps">
+            <div class="map-step"><span class="map-ico">1️⃣</span><span>Abra o <strong>Google Maps</strong> e localize o endereço exato.</span></div>
+            <div class="map-step"><span class="map-ico">📍</span><span>Toque na <strong>bússola</strong> (canto da tela) ou segure o dedo no local por 2 segundos para fixar o pino no endereço.</span></div>
+            <div class="map-step"><span class="map-ico">🔺</span><span>Toque no botão <strong>Compartilhar</strong> (triângulo / seta).</span></div>
+            <div class="map-step"><span class="map-ico">📋</span><span>Escolha a opção <strong>Copiar link</strong>.</span></div>
+            <div class="map-step"><span class="map-ico">↩️</span><span>Volte aqui e <strong>cole</strong> o link no campo abaixo.</span></div>
+          </div>
+        </div>
         <label for="linkLocalizacao" style="margin-top:8px;">Link da Localização</label><input type="text" id="linkLocalizacao" placeholder="Cole o link do Google Maps">
         <label for="abrirCalendarioRetirada" style="margin-top:8px;">Dia e Horário de Retirada *</label>
         <button type="button" id="abrirCalendarioRetirada" class="date-picker-trigger" aria-haspopup="dialog" aria-controls="dialogoDataHoraRetirada" aria-expanded="false">
@@ -277,6 +286,7 @@
             <div class="field"><label for="comodatoMarca">Marca *</label><input type="text" id="comodatoMarca"></div>
             <div class="field"><label for="comodatoModelo">Modelo *</label><input type="text" id="comodatoModelo"></div>
           </div>
+          <div class="field"><label for="comodatoCor">Cor *</label><input type="text" id="comodatoCor" placeholder="Preto"></div>
           <div class="field"><label for="comodatoObservacao">Estado / Obs. *</label><input type="text" id="comodatoObservacao"></div>
           <label style="margin-top:8px;">Fotos * (enviadas no WhatsApp)</label>
           <div class="grid-2">
@@ -454,7 +464,7 @@
 
     <!-- BOTÃO DE ENVIO -->
     <button type="submit" class="btn-submit">
-      <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M13.601 2.326A7.85 7.85 0 0 0 7.994.004C3.627.004.074 3.557.072 7.924c0 1.393.364 2.75 1.057 3.945L.001 16l4.235-1.11a7.94 7.94 0 0 0 3.8.968h.003c4.367 0 7.92-3.553 7.922-7.92a7.87 7.87 0 0 0-2.36-5.612z"/></svg>
+      <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M13.601 2.326A7.85 7.85 0 0 0 7.994.004C3.627.004.074 3.557.072 7.924c0 1.393.364 2.75 1.057 3.945L.001 16l4.235-1.11a7.94 7.94 0 0 0 3.8.968h.003c4.367 0 7.92-3.553 7.92-7.92a7.87 7.87 0 0 0-2.36-5.612z"/></svg>
       <span id="textoBotaoEnvio" aria-live="polite">Enviar para WhatsApp</span>
     </button>
   </form>
