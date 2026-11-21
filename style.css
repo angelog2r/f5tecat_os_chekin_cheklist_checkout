@@ -48,7 +48,27 @@ header p { margin-top: 4px; font-size: 0.85rem; opacity: 0.8; }
 /* Formulários */
 .field { margin-bottom: 14px; }
 label, fieldset.field > legend { display: block; font-size: 0.88rem; font-weight: 600; margin-bottom: 5px; color: #d1d5db; }
-input[type="text"], input[type="tel"], input[type="number"], input[type="file"], input[type="password"], select, textarea { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.95rem; background: #27272a; color: #fff; transition: var(--transition); }
+input[type="text"], input[type="tel"], input[type="number"], input[type="file"], input[type="password"], input[type="datetime-local"], input[type="date"], input[type="time"], select, textarea { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.95rem; background: #27272a; color: #fff; transition: var(--transition); }
+.date-time-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 16px; }
+.date-time-actions button { padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-weight: 600; cursor: pointer; }
+.btn-date-cancel { grid-column: 1 / -1; background: #374151; color: #fff; }
+.btn-date-clear { background: #27272a; color: #d1d5db; }
+.btn-date-confirm { background: var(--success); color: #fff; }
+.btn-date-confirm:disabled { opacity: 0.55; cursor: not-allowed; }
+.date-picker-trigger { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; background: #27272a; color: #fff; font-size: 0.95rem; text-align: left; cursor: pointer; }
+.date-picker-trigger[aria-invalid="true"], .field.has-pending .date-picker-trigger { border-color: var(--danger); }
+.date-time-dialog { max-width: 420px; max-height: 90vh; overflow-y: auto; padding: 18px; }
+.calendar-month { display: grid; grid-template-columns: 40px 1fr 40px; align-items: center; gap: 8px; margin: 8px 0 12px; text-align: center; text-transform: capitalize; }
+.calendar-nav { width: 40px; height: 40px; border: 1px solid var(--border); border-radius: 6px; background: #27272a; color: #fff; font-size: 1.4rem; cursor: pointer; }
+.calendar-weekdays, .calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.calendar-weekdays { margin-bottom: 4px; color: var(--text-muted); font-size: 0.75rem; text-align: center; }
+.calendar-day, .calendar-empty { aspect-ratio: 1; }
+.calendar-day { border: 1px solid transparent; border-radius: 50%; background: #27272a; color: #fff; cursor: pointer; }
+.calendar-day:hover:not(:disabled) { border-color: var(--accent); }
+.calendar-day.selected { background: var(--accent); font-weight: 700; }
+.calendar-day:disabled { opacity: 0.35; cursor: not-allowed; }
+.calendar-time { margin-top: 12px; }
+.calendar-time input { width: 100%; }
 input:disabled, select:disabled, textarea:disabled { opacity: 0.6; cursor: not-allowed; }
 input::placeholder, textarea::placeholder { color: #6b7280; }
 input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2); }

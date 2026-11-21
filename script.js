@@ -53,6 +53,7 @@ const itensTriagem = [
 const itensHardware = ["Aro","Tampa","Lentes da câmera","Tela","Bateria","Carregamento","Auricular","Campainha Viva-voz","Microfone 1","Microfone 2","Conector Fone","Connector USB","Câmera frontal","Câmera traseira","Flash","Wifi Bluetooth GPS","Rede móvel","Chip e cartão de memória","Botão +","Botão -","Botão Power","Botão Biometria","Botão Assistente","Vibracall","Aproximação"];
 const fotosEntradaIds = ["fotoEntrada1","fotoEntrada2","fotoEntrada3","fotoEntrada4","fotoEntrada5","fotoEntrada6"];
 const fotosSaidaIds = ["fotoSaida1","fotoSaida2","fotoSaida3","fotoSaida4","fotoSaida5","fotoSaida6","fotoSaida7"];
+let mesExibidoCalendarioRetirada = new Date(), dataRascunhoRetirada = "";
 
 // ================= HELPERS =================
 const fmtMoeda = v => Number(v || 0).toLocaleString("pt-BR", { style:"currency", currency:"BRL" });
@@ -60,6 +61,25 @@ const fmtPct = v => Number(v || 0).toLocaleString("pt-BR", { maximumFractionDigi
 const fmtData = iso => { try { return new Date(iso).toLocaleString("pt-BR"); } catch { return iso || ""; } };
 const totalCat = cat => registrosOS.filter(r => r.categoria === cat).reduce((t,r) => t + (r.quantidade * r.valor), 0);
 const radioValor = n => { const el = document.querySelector(`input[name="${n}"]:checked`); return el ? el.value : "Não informado"; };
+
+function obterDiaSemanaLocal(valor) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})T\d{2}:\d{2}$/.exec(valor);
+  if (!m) return "";
+  const ano = Number(m[1]), mes = Number(m[2]), dia = Number(m[3]);
+  const data = new Date(ano, mes - 1, dia);
+  if (data.getFullYear() !== ano || data.getMonth() !== mes - 1 || data.getDate() !== dia) return "";
+  return data.toLocaleDateString("pt-BR", { weekday: "long" });
+}
+
+function formatarDataHoraLocal(valor) {
+  if (!valor) return "";
+  const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(valor);
+  if (m) {
+    const diaSemana = obterDiaSemanaLocal(valor);
+    if (diaSemana) return `${diaSemana}, ${m[3]}/${m[2]}/${m[1]} às ${m[4]}:${m[5]}`;
+  }
+  return valor;
+}
 
 function mostrarOpcoesDialogo(mensagem, titulo, opcoes) {
   return new Promise(resolve => {
@@ -310,19 +330,128 @@ function atualizarCamposEntrega() {
   const sim = document.getElementById("servicoEntrega").value === "Sim";
   document.getElementById("camposEntrega").classList.toggle("hidden", !sim);
   document.getElementById("enderecoEntrega").required = sim;
-  document.getElementById("dataHoraRetirada").required = sim;
   if (!sim) {
     ["enderecoEntrega","pontoReferencia","linkLocalizacao","dataHoraRetirada","dataHoraColetaTecnico"].forEach(id => document.getElementById(id).value = "");
     document.querySelectorAll('input[name="confirmacaoAgendamento"]').forEach(r => r.checked = false);
   }
+  atualizarDiaSemanaRetirada();
   atualizarResumoAgendamento(); atualizarCamposAgendamento();
+}
+function atualizarDiaSemanaRetirada() {
+  const campo = document.getElementById("dataHoraRetirada");
+  const diaSemana = obterDiaSemanaLocal(campo.value);
+  const valor = document.getElementById("valorDataHoraRetirada");
+  const confirmacao = document.getElementById("confirmacaoDataHoraRetirada");
+  valor.textContent = campo.value ? formatarDataHoraLocal(campo.value) : "Selecione data e horário";
+  confirmacao.textContent = diaSemana ? "Data e horário confirmados." : "";
+  confirmacao.classList.toggle("hidden", !diaSemana);
+}
+function atualizarPreviewCalendarioRetirada() {
+  const horario = document.getElementById("horarioRetiradaRascunho").value;
+  const diaSemana = dataRascunhoRetirada ? obterDiaSemanaLocal(`${dataRascunhoRetirada}T00:00`) : "";
+  const preview = document.getElementById("diaSemanaRetiradaRascunho");
+  const minimo = document.getElementById("dataHoraRetirada").min;
+  const inputHorario = document.getElementById("horarioRetiradaRascunho");
+  inputHorario.min = minimo && dataRascunhoRetirada === minimo.slice(0, 10) ? minimo.slice(11, 16) : "";
+  preview.textContent = diaSemana ? `Dia selecionado: ${diaSemana}${horario ? ` às ${horario}` : ""}` : "Selecione um dia";
+  atualizarConfirmacaoCalendarioRetirada();
+}
+function atualizarConfirmacaoCalendarioRetirada() {
+  const horario = document.getElementById("horarioRetiradaRascunho").value;
+  const minimo = document.getElementById("dataHoraRetirada").min;
+  const valor = dataRascunhoRetirada && horario ? `${dataRascunhoRetirada}T${horario}` : "";
+  const erro = document.getElementById("erroCalendarioRetirada");
+  const botao = document.getElementById("confirmarDataHoraRetirada");
+  const invalido = Boolean(valor && minimo && valor < minimo);
+  erro.textContent = invalido ? "Escolha um horário futuro." : "";
+  erro.classList.toggle("hidden", !invalido);
+  botao.disabled = !valor || invalido;
+}
+function renderizarCalendarioRetirada() {
+  const ano = mesExibidoCalendarioRetirada.getFullYear();
+  const mes = mesExibidoCalendarioRetirada.getMonth();
+  const inicioMes = new Date(ano, mes, 1);
+  const diasNoMes = new Date(ano, mes + 1, 0).getDate();
+  const offset = (inicioMes.getDay() + 6) % 7;
+  const grade = document.getElementById("calendarioRetirada");
+  const minimo = document.getElementById("dataHoraRetirada").min;
+  const menorData = minimo ? minimo.slice(0, 10) : "";
+  document.getElementById("mesAnoCalendarioRetirada").textContent =
+    inicioMes.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+  grade.replaceChildren();
+  for (let i = 0; i < offset; i++) {
+    const vazio = document.createElement("span");
+    vazio.className = "calendar-empty";
+    vazio.setAttribute("aria-hidden", "true");
+    grade.appendChild(vazio);
+  }
+  for (let dia = 1; dia <= diasNoMes; dia++) {
+    const data = `${ano}-${String(mes + 1).padStart(2, "0")}-${String(dia).padStart(2, "0")}`;
+    const botao = document.createElement("button");
+    botao.type = "button";
+    botao.className = "calendar-day";
+    botao.textContent = String(dia);
+    botao.setAttribute("aria-label", new Date(ano, mes, dia).toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long", year: "numeric" }));
+    botao.setAttribute("aria-pressed", String(data === dataRascunhoRetirada));
+    if (data === dataRascunhoRetirada) botao.classList.add("selected");
+    botao.disabled = Boolean(menorData && data < menorData);
+    botao.addEventListener("click", () => {
+      dataRascunhoRetirada = data;
+      renderizarCalendarioRetirada();
+      atualizarPreviewCalendarioRetirada();
+    });
+    grade.appendChild(botao);
+  }
+  atualizarPreviewCalendarioRetirada();
+}
+function abrirCalendarioRetirada() {
+  const valor = document.getElementById("dataHoraRetirada").value;
+  dataRascunhoRetirada = valor ? valor.slice(0, 10) : "";
+  document.getElementById("horarioRetiradaRascunho").value = valor ? valor.slice(11, 16) : "";
+  const base = dataRascunhoRetirada
+    ? new Date(Number(dataRascunhoRetirada.slice(0, 4)), Number(dataRascunhoRetirada.slice(5, 7)) - 1, Number(dataRascunhoRetirada.slice(8, 10)))
+    : new Date();
+  mesExibidoCalendarioRetirada = new Date(base.getFullYear(), base.getMonth(), 1);
+  document.getElementById("erroCalendarioRetirada").textContent = "";
+  document.getElementById("erroCalendarioRetirada").classList.add("hidden");
+  renderizarCalendarioRetirada();
+  const dialogo = document.getElementById("dialogoDataHoraRetirada");
+  document.getElementById("abrirCalendarioRetirada").setAttribute("aria-expanded", "true");
+  dialogo.showModal();
+}
+function confirmarDataHoraRetirada() {
+  const horario = document.getElementById("horarioRetiradaRascunho").value;
+  if (!dataRascunhoRetirada || !horario) {
+    atualizarConfirmacaoCalendarioRetirada();
+    document.getElementById("horarioRetiradaRascunho").focus();
+    return;
+  }
+  const valor = `${dataRascunhoRetirada}T${horario}`;
+  const minimo = document.getElementById("dataHoraRetirada").min;
+  if (minimo && valor < minimo) {
+    atualizarConfirmacaoCalendarioRetirada();
+    document.getElementById("horarioRetiradaRascunho").focus();
+    return;
+  }
+  const campo = document.getElementById("dataHoraRetirada");
+  campo.value = valor;
+  campo.dispatchEvent(new Event("input", { bubbles: true }));
+  campo.dispatchEvent(new Event("change", { bubbles: true }));
+  document.getElementById("dialogoDataHoraRetirada").close();
+}
+function limparDataHoraRetirada() {
+  const campo = document.getElementById("dataHoraRetirada");
+  campo.value = "";
+  campo.dispatchEvent(new Event("input", { bubbles: true }));
+  campo.dispatchEvent(new Event("change", { bubbles: true }));
+  document.getElementById("dialogoDataHoraRetirada").close();
 }
 function atualizarResumoAgendamento() {
   document.getElementById("clienteAgendamento").textContent = document.getElementById("cliente").value.trim() || "—";
   document.getElementById("telefoneAgendamento").textContent = document.getElementById("telefone").value.trim() || "—";
   document.getElementById("enderecoAgendamento").textContent = document.getElementById("enderecoEntrega").value.trim() || "—";
   document.getElementById("referenciaAgendamento").textContent = document.getElementById("pontoReferencia").value.trim() || "—";
-  document.getElementById("preferenciaAgendamento").textContent = document.getElementById("dataHoraRetirada").value.trim() || "—";
+  document.getElementById("preferenciaAgendamento").textContent = formatarDataHoraLocal(document.getElementById("dataHoraRetirada").value.trim()) || "—";
   const link = document.getElementById("linkLocalizacao").value.trim();
   const linkEl = document.getElementById("linkAgendamento"), txtEl = document.getElementById("linkAgendamentoTexto");
   linkEl.classList.add("hidden"); txtEl.classList.toggle("hidden", !link); txtEl.textContent = link || "—";
@@ -356,18 +485,43 @@ function atualizarIndicadoresPendencia(mostrar) {
     c.querySelectorAll('input:not([type="radio"]), select, textarea').forEach(ctrl => {
       if (ctrl.willValidate) { const inv = !ctrl.checkValidity(); if (inv) p = true; if (mostrar && inv) ctrl.setAttribute("aria-invalid","true"); else ctrl.removeAttribute("aria-invalid"); }
     });
+    if (c.id === "camposEntrega") {
+      const semDataRetirada = document.getElementById("servicoEntrega").value === "Sim"
+        && !document.getElementById("dataHoraRetirada").value;
+      const abrirCalendario = document.getElementById("abrirCalendarioRetirada");
+      if (mostrar && semDataRetirada) abrirCalendario.setAttribute("aria-invalid", "true");
+      else abrirCalendario.removeAttribute("aria-invalid");
+      if (semDataRetirada) p = true;
+    }
     c.classList.toggle("has-pending", mostrar && p);
-    if (p) { const l = c.querySelector("label, legend"); pend.push({ campo: c, nome: l ? l.textContent.trim().replace(/\s+/g," ") : "Campo" }); }
+    if (p) {
+      const l = c.querySelector("label, legend");
+      const nome = c.id === "camposEntrega"
+        && document.getElementById("servicoEntrega").value === "Sim"
+        && !document.getElementById("dataHoraRetirada").value
+        ? "Dia e Horário de Retirada *"
+        : l ? l.textContent.trim().replace(/\s+/g," ") : "Campo";
+      pend.push({ campo: c, nome });
+    }
   });
   const res = document.getElementById("validationSummary");
   res.classList.toggle("hidden", !mostrar || pend.length === 0);
   if (mostrar && pend.length > 0) document.getElementById("validationMessage").textContent = `⚠ Faltam ${pend.length} item(ns). Próximo: ${pend[0].nome}`;
   return pend;
 }
-const formularioValidoVisivel = () => Array.from(document.getElementById("formOS").elements).every(c => !c.willValidate || c.getClientRects().length === 0 || c.checkValidity());
+const formularioValidoVisivel = () => Array.from(document.getElementById("formOS").elements).every(c => !c.willValidate || c.getClientRects().length === 0 || c.checkValidity())
+  && (document.getElementById("servicoEntrega").value !== "Sim" || Boolean(document.getElementById("dataHoraRetirada").value));
 function irParaPrimeiraPendencia() {
   const p = Array.from(document.querySelectorAll("#formOS .has-pending")).find(c => c.getClientRects().length > 0);
-  if (p) p.scrollIntoView({ behavior: "smooth", block: "center" });
+  if (p) {
+    p.scrollIntoView({ behavior: "smooth", block: "center" });
+    if (p.id === "camposEntrega") {
+      const semDataRetirada = document.getElementById("servicoEntrega").value === "Sim"
+        && !document.getElementById("dataHoraRetirada").value;
+      if (semDataRetirada) document.getElementById("abrirCalendarioRetirada").focus();
+      else p.querySelector("input:invalid, select:invalid, textarea:invalid")?.focus();
+    }
+  }
 }
 
 function gerarRelatorioDiagnostico(prefixo) {
@@ -416,6 +570,32 @@ function renderizarDiagnostico() {
 const formularioOS = document.getElementById("formOS");
 formularioOS.addEventListener("input", () => { clearTimeout(debounceEnvioId); debounceEnvioId = setTimeout(atualizarEstadoEnvio, 150); });
 formularioOS.addEventListener("change", atualizarEstadoEnvio);
+document.getElementById("dataHoraRetirada").addEventListener("input", () => {
+  atualizarDiaSemanaRetirada();
+  atualizarResumoAgendamento();
+});
+document.getElementById("dataHoraRetirada").addEventListener("change", () => {
+  atualizarDiaSemanaRetirada();
+  atualizarResumoAgendamento();
+});
+document.getElementById("abrirCalendarioRetirada").addEventListener("click", abrirCalendarioRetirada);
+document.getElementById("mesAnteriorRetirada").addEventListener("click", () => {
+  mesExibidoCalendarioRetirada = new Date(mesExibidoCalendarioRetirada.getFullYear(), mesExibidoCalendarioRetirada.getMonth() - 1, 1);
+  renderizarCalendarioRetirada();
+});
+document.getElementById("mesSeguinteRetirada").addEventListener("click", () => {
+  mesExibidoCalendarioRetirada = new Date(mesExibidoCalendarioRetirada.getFullYear(), mesExibidoCalendarioRetirada.getMonth() + 1, 1);
+  renderizarCalendarioRetirada();
+});
+document.getElementById("horarioRetiradaRascunho").addEventListener("input", atualizarPreviewCalendarioRetirada);
+document.getElementById("dialogoDataHoraRetirada").addEventListener("close", () => {
+  document.getElementById("abrirCalendarioRetirada").setAttribute("aria-expanded", "false");
+});
+document.getElementById("limparDataHoraRetirada").addEventListener("click", limparDataHoraRetirada);
+document.getElementById("cancelarDataHoraRetirada").addEventListener("click", () => {
+  document.getElementById("dialogoDataHoraRetirada").close();
+});
+document.getElementById("confirmarDataHoraRetirada").addEventListener("click", confirmarDataHoraRetirada);
 document.getElementById("irParaPendencia").addEventListener("click", irParaPrimeiraPendencia);
 document.getElementById("possuiAcessorios").addEventListener("change", atualizarCampoAcessorios);
 document.getElementById("formaPagamento").addEventListener("change", atualizarCamposPagamento);
@@ -846,7 +1026,7 @@ function secaoAgendamento() {
   r += `- Endereco: ${document.getElementById("enderecoEntrega").value || "—"}\n`;
   if (document.getElementById("pontoReferencia").value) r += `- Referencia: ${document.getElementById("pontoReferencia").value}\n`;
   if (document.getElementById("linkLocalizacao").value) r += `- Localizacao: ${document.getElementById("linkLocalizacao").value}\n`;
-  r += `- Preferencia do cliente: ${document.getElementById("dataHoraRetirada").value || "—"}\n`;
+  r += `- Preferencia do cliente: ${formatarDataHoraLocal(document.getElementById("dataHoraRetirada").value) || "—"}\n`;
   r += `- Confirmacao: ${conf}`;
   if (conf === "Não" && novo) r += ` (sugerido: ${novo})`;
   return r;
@@ -1152,6 +1332,7 @@ function carregarOSNoFormulario(numero) {
   set("possuiAcessorios", a.possuiAcessorios); atualizarCampoAcessorios(); set("acessorios", a.acessorios);
   set("servicoEntrega", e.servico); atualizarCamposEntrega();
   set("enderecoEntrega", e.endereco); set("pontoReferencia", e.referencia); set("linkLocalizacao", e.link); set("dataHoraRetirada", e.dataHora);
+  atualizarDiaSemanaRetirada();
   itensTriagem.forEach(i => { const v = os.triagem?.[i.id]; if (!v || v === "Não informado") return; const inp = document.querySelector(`input[name="${i.id}"][value="${CSS.escape(v)}"]`); if (inp) inp.checked = true; });
   registrosOS = (os.registros || []).map(r => ({ ...r }));
   proximoRegistroId = registrosOS.reduce((m, r) => typeof r.id === "number" ? Math.max(m, r.id) : m, 0) + 1;
@@ -1200,6 +1381,7 @@ async function limparHistorico() {
 async function resetarAtendimento() {
   if (!(await confirmarAcao("Limpar todos os campos e começar novo atendimento?", "Novo Atendimento", "Limpar", "Cancelar"))) return;
   document.getElementById("formOS").reset();
+  atualizarDiaSemanaRetirada();
   osSessaoNumero = null; financeiroAprovado = false; abasProtegidasDesbloqueadas = false;
   sequenciaPadrao = []; registrosOS = []; proximoRegistroId = 1; validacaoIniciada = false; filtroHistoricoAtual = "Todos";
   itensTriagem.forEach(i => document.querySelectorAll(`input[name="${i.id}"]`).forEach(r => r.checked = false));
@@ -1233,7 +1415,13 @@ function configurarMensagensValidacao() {
 function init() {
   popularParcelas(); atualizarTaxaCartao(); atualizarCamposPagamento();
   configurarPreviewsFotos(); configurarMensagensValidacao(); renderizarRegistrosOS();
-  alternarModo("cliente", false); carregarDadosDaURL(); atualizarEstadoEnvio();
+  const campoData = document.getElementById("dataHoraRetirada");
+  if (campoData) {
+    const agora = new Date();
+    agora.setMinutes(agora.getMinutes() - agora.getTimezoneOffset());
+    campoData.min = agora.toISOString().slice(0,16);
+  }
+  alternarModo("cliente", false); carregarDadosDaURL(); atualizarDiaSemanaRetirada(); atualizarEstadoEnvio();
 }
 
 // Inicialização segura após carregamento do DOM e dependências (defer)

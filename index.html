@@ -12,7 +12,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
 
   <!-- Folha de Estilos -->
-  <link rel="stylesheet" href="./style.css?v=1">
+  <link rel="stylesheet" href="./style.css?v=2">
 </head>
 <body>
 
@@ -55,6 +55,30 @@
       <p id="dialogoMensagem"></p>
       <div class="dialog-actions" id="dialogoBotoes"></div>
     </form>
+  </dialog>
+
+  <dialog id="dialogoDataHoraRetirada" class="date-time-dialog" aria-labelledby="tituloCalendarioRetirada">
+    <h2 id="tituloCalendarioRetirada">Selecionar data e horário de retirada</h2>
+    <div class="calendar-month">
+      <button type="button" class="calendar-nav" id="mesAnteriorRetirada" aria-label="Mês anterior">‹</button>
+      <strong id="mesAnoCalendarioRetirada"></strong>
+      <button type="button" class="calendar-nav" id="mesSeguinteRetirada" aria-label="Próximo mês">›</button>
+    </div>
+    <div class="calendar-weekdays" aria-hidden="true">
+      <span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span><span>Dom</span>
+    </div>
+    <div id="calendarioRetirada" class="calendar-grid" aria-label="Dias do mês"></div>
+    <small id="diaSemanaRetiradaRascunho" class="field-note" aria-live="polite">Selecione um dia</small>
+    <div class="field calendar-time">
+      <label for="horarioRetiradaRascunho">Horário *</label>
+      <input type="time" id="horarioRetiradaRascunho">
+    </div>
+    <small id="erroCalendarioRetirada" class="field-note text-danger hidden" role="alert"></small>
+    <div class="date-time-actions">
+      <button type="button" class="btn-date-cancel" id="cancelarDataHoraRetirada">Cancelar</button>
+      <button type="button" class="btn-date-clear" id="limparDataHoraRetirada">Limpar</button>
+      <button type="button" class="btn-date-confirm" id="confirmarDataHoraRetirada" disabled>Confirmar</button>
+    </div>
   </dialog>
 
   <!-- EDITOR DE PDF -->
@@ -145,7 +169,12 @@
         <label for="pontoReferencia" style="margin-top:8px;">Ponto de Referência</label><input type="text" id="pontoReferencia" placeholder="Próximo à padaria X">
         <div class="tutorial-maps">Como copiar: Maps → Bússola → Compartilhar → Copiar link</div>
         <label for="linkLocalizacao" style="margin-top:8px;">Link da Localização</label><input type="text" id="linkLocalizacao" placeholder="Cole o link do Google Maps">
-        <label for="dataHoraRetirada" style="margin-top:8px;">Dia e Horário de Retirada *</label><input type="text" id="dataHoraRetirada" placeholder="Segunda, às 14h">
+        <label for="abrirCalendarioRetirada" style="margin-top:8px;">Dia e Horário de Retirada *</label>
+        <button type="button" id="abrirCalendarioRetirada" class="date-picker-trigger" aria-haspopup="dialog" aria-controls="dialogoDataHoraRetirada" aria-expanded="false">
+          <span id="valorDataHoraRetirada">Selecione data e horário</span><span aria-hidden="true">▦</span>
+        </button>
+        <input type="datetime-local" id="dataHoraRetirada" class="hidden" aria-hidden="true" tabindex="-1">
+        <small id="confirmacaoDataHoraRetirada" class="field-note hidden" aria-live="polite"></small>
       </div>
       <div class="field">
         <label for="senha">Senha de Desbloqueio *</label>
@@ -433,6 +462,6 @@
   <button type="button" class="btn-novo" onclick="resetarAtendimento()">🔄 Novo Atendimento</button>
 </main>
 
-<script src="./script.js?v=1" defer></script>
+<script src="./script.js?v=2" defer></script>
 </body>
 </html>
